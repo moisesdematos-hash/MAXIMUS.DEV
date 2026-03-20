@@ -1,0 +1,278 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .code-editor-wrapper {
+    @apply relative flex h-full w-full;
+  }
+
+  .line-numbers {
+    @apply bg-gray-950 text-gray-600 px-4 py-4 text-right font-mono text-sm select-none border-r-2 border-blue-600 overflow-hidden transition-all duration-300 relative;
+    line-height: 1.5;
+    min-width: 4rem;
+    background: linear-gradient(180deg, rgba(3, 7, 18, 0.9) 0%, rgba(3, 7, 18, 0.95) 100%);
+    box-shadow: inset -4px 0 8px rgba(59, 130, 246, 0.1);
+  }
+
+  .line-numbers::before {
+    content: '';
+    @apply absolute inset-0 pointer-events-none;
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        rgba(59, 130, 246, 0.15) 0px,
+        rgba(59, 130, 246, 0.15) 1px,
+        transparent 1px,
+        transparent 74px,
+        rgba(59, 130, 246, 0.08) 74px,
+        rgba(59, 130, 246, 0.08) 75px
+      );
+    right: -4px;
+    width: 4px;
+  }
+
+  .line-numbers:hover {
+    @apply border-r-2 border-blue-400;
+    box-shadow: inset -4px 0 12px rgba(59, 130, 246, 0.2);
+  }
+
+  .line-number {
+    @apply block text-gray-500 hover:text-blue-300 transition-all duration-200 relative py-0;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    position: relative;
+    border-left: 3px solid transparent;
+    padding-left: 4px;
+  }
+
+  .line-number::before {
+    content: '';
+    @apply absolute inset-0 pointer-events-none;
+    background: linear-gradient(90deg, rgba(59, 130, 246, 0) 0%, rgba(59, 130, 246, 0.12) 50%, rgba(59, 130, 246, 0) 100%);
+    border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+    opacity: 0.4;
+  }
+
+  .line-number::after {
+    content: '';
+    @apply absolute left-full top-0 bottom-0 pointer-events-none;
+    width: 200vw;
+    background: linear-gradient(90deg, rgba(59, 130, 246, 0.02) 0%, rgba(59, 130, 246, 0.04) 5%, transparent 15%);
+    border-bottom: 1px solid rgba(59, 130, 246, 0.08);
+  }
+
+  .line-number:nth-child(5n) {
+    @apply text-blue-300 font-semibold;
+  }
+
+  .line-number:nth-child(10n) {
+    @apply text-cyan-300 font-bold text-base;
+  }
+
+  .line-number:nth-child(5n)::before {
+    opacity: 0.7;
+    background: linear-gradient(90deg, rgba(59, 130, 246, 0) 0%, rgba(59, 130, 246, 0.25) 50%, rgba(59, 130, 246, 0) 100%);
+    border-bottom-color: rgba(59, 130, 246, 0.4);
+  }
+
+  .line-number:nth-child(10n)::before {
+    opacity: 1;
+    background: linear-gradient(90deg, rgba(34, 211, 238, 0) 0%, rgba(34, 211, 238, 0.3) 50%, rgba(34, 211, 238, 0) 100%);
+    border-bottom-color: rgba(34, 211, 238, 0.5);
+    border-bottom-width: 2px;
+  }
+
+  .line-number:hover {
+    @apply text-blue-400 font-semibold border-l-blue-400;
+    transform: translateX(-2px);
+    border-left-color: rgba(96, 165, 250, 0.8);
+  }
+
+  .line-number:hover::before {
+    opacity: 1;
+    background: linear-gradient(90deg, rgba(59, 130, 246, 0) 0%, rgba(59, 130, 246, 0.35) 50%, rgba(59, 130, 246, 0) 100%);
+    border-bottom-color: rgba(59, 130, 246, 0.5);
+  }
+
+  .code-input-container {
+    @apply flex-1 overflow-hidden relative;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
+  }
+
+  .code-grid-background {
+    @apply absolute inset-0 pointer-events-none;
+    background-image:
+      linear-gradient(90deg, rgba(59, 130, 246, 0.15) 1px, transparent 1px),
+      linear-gradient(0deg, rgba(59, 130, 246, 0.18) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59, 130, 246, 0.06) 1px, transparent 1px),
+      linear-gradient(0deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
+    background-size: 40px 1.5em, 100% 1.5em, 400px 1.5em, 100% 60px;
+    background-position: 0 0, 0 0, 0 0, 0 0;
+  }
+
+  .code-grid-background::before {
+    content: '';
+    @apply absolute inset-0 pointer-events-none;
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        rgba(59, 130, 246, 0.03) 0px,
+        rgba(59, 130, 246, 0.03) 1px,
+        transparent 1px,
+        transparent 23px,
+        rgba(59, 130, 246, 0.12) 23px,
+        rgba(59, 130, 246, 0.12) 24px
+      );
+    z-index: 1;
+  }
+
+  .code-grid-background::after {
+    content: '';
+    @apply absolute inset-0 pointer-events-none;
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        rgba(34, 197, 94, 0.04) 0px,
+        rgba(34, 197, 94, 0.04) 1px,
+        transparent 1px,
+        transparent 47px,
+        rgba(34, 197, 94, 0.06) 47px,
+        rgba(34, 197, 94, 0.06) 48px
+      );
+    z-index: 0;
+  }
+
+  .code-editor-input {
+    @apply relative z-10 w-full h-full p-4 font-mono text-sm border-none resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset overflow-auto;
+    line-height: 1.6;
+    tab-size: 2;
+    background: transparent;
+    color: #10b981;
+    text-shadow: 0 0 4px rgba(16, 185, 129, 0.3);
+    caret-color: #3b82f6;
+    letter-spacing: 0.02em;
+  }
+
+  .code-editor-input::placeholder {
+    color: rgba(107, 114, 128, 0.5);
+    text-shadow: none;
+  }
+
+  .code-editor-input:focus {
+    @apply focus:ring-blue-500;
+    background: radial-gradient(ellipse at center, rgba(59, 130, 246, 0.05) 0%, transparent 70%);
+  }
+
+  .code-editor-input::selection {
+    @apply bg-blue-600 text-white;
+    text-shadow: 0 0 4px rgba(16, 185, 129, 0.5);
+  }
+
+  .cursor-line-indicator {
+    @apply absolute left-0 bg-blue-600 opacity-10 pointer-events-none transition-all duration-75;
+    z-index: 1;
+  }
+
+  .column-marker {
+    @apply absolute top-0 bottom-0 bg-gradient-to-b from-amber-500 to-transparent opacity-0 pointer-events-none transition-opacity;
+    width: 2px;
+    z-index: 2;
+  }
+
+  .code-editor-input::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  .code-editor-input::-webkit-scrollbar-track {
+    background: rgba(59, 130, 246, 0.1);
+    border-radius: 6px;
+  }
+
+  .code-editor-input::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(59, 130, 246, 0.4) 0%, rgba(59, 130, 246, 0.6) 100%);
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  .code-editor-input::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.6);
+    background-clip: padding-box;
+  }
+
+  .line-numbers::-webkit-scrollbar {
+    width: 0;
+  }
+
+  /* Circuit Closed Aesthetic */
+  .circuit-container {
+    @apply border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 rounded-lg overflow-hidden transition-all duration-300;
+    box-shadow: 0 8px 32px -8px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(59, 130, 246, 0.05);
+  }
+
+  .circuit-border {
+    @apply border border-gray-200 dark:border-gray-800 transition-all duration-300;
+  }
+
+  .circuit-glow {
+    @apply transition-all duration-300;
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.05);
+  }
+
+  .circuit-glow:hover {
+    box-shadow: 0 0 25px rgba(59, 130, 246, 0.15);
+  }
+
+  .circuit-line {
+    @apply absolute bg-blue-500/20 pointer-events-none transition-all duration-500;
+  }
+
+  /* Compact Buttons */
+  .btn-compact {
+    @apply px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center space-x-1.5;
+  }
+
+  .btn-icon-sm {
+    @apply p-1.5 text-gray-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors;
+  }
+
+  /* Scan & Pulse Animations */
+  @keyframes circuit-pulse {
+    0% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.3); }
+    50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); border-color: rgba(59, 130, 246, 0.8); }
+    100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.3); }
+  }
+
+  .animate-circuit-pulse {
+    animation: circuit-pulse 3s infinite ease-in-out;
+  }
+
+  @keyframes scan-line {
+    0% { transform: translateY(-100%); opacity: 0; }
+    10% { opacity: 0.5; }
+    90% { opacity: 0.5; }
+    100% { transform: translateY(1000%); opacity: 0; }
+  }
+
+  .scan-line-overlay {
+    @apply absolute inset-0 pointer-events-none overflow-hidden;
+    z-index: 20;
+  }
+
+  .scan-line-element {
+    @apply w-full h-1 bg-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.5)];
+    animation: scan-line 4s linear infinite;
+  }
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+  will-change: filter, opacity;
+}
+
+.animate-scan {
+  animation: scan 3s linear infinite;
+  will-change: transform;
+}
+}
