@@ -20,7 +20,8 @@ import {
   Eye,
   FolderOpen,
   Trash2,
-  User
+  User,
+  Activity
 } from 'lucide-react';
 import { useUI } from '../contexts/UIContext';
 import SettingsModal from './SettingsModal';
@@ -36,8 +37,10 @@ import UserMenu from './UserMenu';
 import NotificationsModal from './NotificationsModal';
 import MonitoringDashboard from './MonitoringDashboard';
 import PresenceAvatars from './PresenceAvatars';
+import VentureDashboard from './VentureDashboard';
 import { useProjects } from '../contexts/ProjectContext';
 import { useAuth } from '../contexts/AuthContext';
+import PulseMonitor from './PulseMonitor';
 
 interface TopBarProps {
   onBackToWelcome?: () => void;
@@ -45,7 +48,7 @@ interface TopBarProps {
 
 const TopBar = ({ onBackToWelcome }: TopBarProps) => {
   const { user, profile } = useAuth();
-  const { addProject, currentProject, updateProject, deleteProject, exportProjects } = useProjects();
+  const { addProject, currentProject, updateProject, deleteProject, exportProjects, pulseData, calculatePulse } = useProjects();
   const { 
     showSettings, setShowSettings,
     showTemplates, setShowTemplates,
@@ -61,6 +64,7 @@ const TopBar = ({ onBackToWelcome }: TopBarProps) => {
     language, setLanguage,
     showTimeTravel, setShowTimeTravel,
     showVentureDashboard, setShowVentureDashboard,
+    showPulse, setShowPulse,
     credits
   } = useUI();
 
@@ -92,6 +96,14 @@ const TopBar = ({ onBackToWelcome }: TopBarProps) => {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [showSearchModal]);
+
+  const performSearch = (query: string) => {
+    console.log('🔍 Searching projects for:', query);
+    // This function is intended to trigger the search modal and set the query
+    // The actual filtering/display of results happens within the SearchModal's logic
+    setShowSearchModal(true);
+    setSearchQuery(query);
+  };
 
   // Focus search input when modal opens
   React.useEffect(() => {
@@ -380,6 +392,20 @@ const TopBar = ({ onBackToWelcome }: TopBarProps) => {
             >
               <LucideHistory className="w-4 h-4" />
             </button>
+
+            <button 
+              onClick={() => {
+                if (currentProject) {
+                  calculatePulse(currentProject.code);
+                }
+                setShowPulse(true);
+              }}
+              className={`p-1.5 ${showPulse ? 'text-emerald-500 bg-emerald-50' : 'text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'} rounded-lg transition-all relative`}
+              title="Maximus Pulse Analytics"
+            >
+              <Activity className="w-4 h-4" />
+              <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
+            </button>
           </div>
 
           <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-2" />
@@ -526,10 +552,22 @@ const TopBar = ({ onBackToWelcome }: TopBarProps) => {
         />
       )}
 
-      {/* Monitoring Dashboard */}
       {showMonitoringDashboard && (
         <MonitoringDashboard 
-          onClose={() => setShowMonitoringDashboard(false)}
+          onClose={() => setShowMonitoringDashboard(false)} 
+        />
+      )}
+
+      {showVentureDashboard && (
+        <VentureDashboard />
+      )}
+
+      {showPulse && pulseData && (
+        <PulseMonitor 
+          isOpen={showPulse} 
+          onClose={() => setShowPulse(false)} 
+          data={pulseData} 
+          code={currentProject?.code || ''} 
         />
       )}
 

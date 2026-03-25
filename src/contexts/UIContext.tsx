@@ -58,6 +58,8 @@ interface UIContextType {
   setShowVentureDashboard: (show: boolean) => void;
   workspaceMode: 'standard' | 'agent';
   setWorkspaceMode: (mode: 'standard' | 'agent') => void;
+  showPulse: boolean;
+  setShowPulse: (show: boolean) => void;
   credits: number;
   setCredits: React.Dispatch<React.SetStateAction<number>>;
   isPlanningActive: boolean;
@@ -107,6 +109,7 @@ export const UIProvider = ({ children }: { children: ReactNode }) => {
   const [showTimeTravel, setShowTimeTravel] = useState(false);
   const [showVentureDashboard, setShowVentureDashboard] = useState(false);
   const [workspaceMode, setWorkspaceMode] = useState<'standard' | 'agent'>('standard');
+  const [showPulse, setShowPulse] = useState(false);
   const [chatInteractionType, setChatInteractionType] = useState<'chat' | 'create' | 'claw' | 'subscription' | 'history'>('chat');
   const [credits, setCredits] = useState(1500);
   const [isPlanningActive, setIsPlanningActive] = useState(true);
@@ -167,6 +170,8 @@ export const UIProvider = ({ children }: { children: ReactNode }) => {
     setShowTimeTravel,
     showVentureDashboard,
     setShowVentureDashboard,
+    showPulse,
+    setShowPulse,
     workspaceMode,
     setWorkspaceMode,
     credits,

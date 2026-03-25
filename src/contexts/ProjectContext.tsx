@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import CookieManager from '../utils/cookieManager';
 import { useAuth } from './AuthContext';
 import { supabase } from '../lib/supabase';
+import { PulseData } from '../lib/performanceAgent';
 
 export interface Project {
   id: string;
@@ -48,6 +49,8 @@ interface ProjectContextType {
   exportProjects: () => string;
   importProjects: (data: string) => void;
   clearAllProjects: () => void;
+  pulseData: PulseData | null;
+  calculatePulse: (code: string) => Promise<void>;
   syncing: boolean;
 }
 
@@ -112,6 +115,15 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
       localStorage.removeItem('maximusdev-current-project');
     }
   }, [currentProject]);
+  
+  const [pulseData, setPulseData] = useState<PulseData | null>(null);
+
+  const calculatePulse = async (code: string) => {
+    const { PerformanceAgent } = await import('../lib/performanceAgent');
+    const agent = new PerformanceAgent();
+    const data = await agent.getPulseScore(code);
+    setPulseData(data);
+  };
 
   // Sync projects from Supabase when user logs in
   useEffect(() => {
@@ -356,6 +368,8 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
     exportProjects,
     importProjects,
     clearAllProjects,
+    pulseData,
+    calculatePulse,
     syncing
   };
 
