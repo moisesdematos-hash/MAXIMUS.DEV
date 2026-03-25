@@ -14,7 +14,7 @@ import { UserDna } from './userDna';
 import { CreditManager } from './creditManager';
 import { BlueprintAgent } from './blueprintAgent';
 import { SecurityAgent } from './securityAgent';
-import { CollaborationAgent } from './collaborationAgent';
+import { collaborationAgent, CollaborationAgent } from './collaborationAgent';
 
 export class MultiAgentOrchestrator {
   private static instance: MultiAgentOrchestrator;
@@ -47,7 +47,7 @@ export class MultiAgentOrchestrator {
     this.creditManager = CreditManager.getInstance();
     this.blueprintAgent = new BlueprintAgent();
     this.securityAgent = new SecurityAgent();
-    this.collaborationAgent = new CollaborationAgent();
+    this.collaborationAgent = collaborationAgent;
   }
 
   public static getInstance(): MultiAgentOrchestrator {

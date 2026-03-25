@@ -12,6 +12,7 @@ import { useProjects } from './contexts/ProjectContext';
 import { useAuth } from './contexts/AuthContext';
 import { useUI } from './contexts/UIContext';
 import { Loader } from 'lucide-react';
+import { collaborationAgent } from './lib/collaborationAgent';
 
 const MonitoringDashboard = lazy(() => import('./components/MonitoringDashboard'));
 const AgentReasoning = lazy(() => import('./components/AgentReasoning'));
@@ -57,8 +58,17 @@ function App() {
   useEffect(() => {
     if (currentProject && currentProject.code) {
       setGeneratedCode(currentProject.code);
+      
+      // Initialize Nexus Collaboration
+      if (user) {
+        collaborationAgent.initNexus(
+          currentProject.id, 
+          user.id, 
+          user.email?.split('@')[0] || 'Dev'
+        );
+      }
     }
-  }, [currentProject]);
+  }, [currentProject, user]);
 
   const handleCodeGenerated = (code: string) => {
     setGeneratedCode(code);

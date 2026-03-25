@@ -47,10 +47,10 @@ const StatusBar: React.FC = () => {
       {/* Right Segment: Integrated Widgets */}
       <div className="flex items-center space-x-3">
          <QuantumShield isMinimal />
-         <div className="flex items-center space-x-1 mr-2 border-l border-gray-200 dark:border-gray-800 pl-3">
-            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-[9px] text-gray-400 uppercase font-black tracking-widest">Live</span>
-         </div>
+          <div className="flex items-center space-x-1 mr-2 border-l border-gray-200 dark:border-gray-800 pl-3">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[9px] text-gray-400 uppercase font-black tracking-widest">Nexus Online</span>
+          </div>
       </div>
     </div>
   );

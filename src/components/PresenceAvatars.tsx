@@ -1,24 +1,33 @@
 import React from 'react';
 import { useUI } from '../contexts/UIContext';
-import { useMultiAgent } from '../hooks/useMultiAgent';
+import { collaborationAgent, Collaborator } from '../lib/collaborationAgent';
 
 const PresenceAvatars: React.FC = () => {
   const { collaborators = [], setCollaborators, setActivities, language } = useUI();
-  const multiAgent = useMultiAgent();
-  const getCollabData = multiAgent?.getCollabData;
 
-  // Sincronização periódica de presença e atividades
+  // Sincronização periódica de presença do Nexus
   React.useEffect(() => {
-    if (!getCollabData) return;
-
     const updateLoop = () => {
       try {
-        const data = getCollabData();
-        if (data) {
-          const { collaborators: collabs = [], activities: acts = [] } = data;
-          setCollaborators([...collabs]);
-          setActivities([...acts]);
-        }
+        const presence = collaborationAgent.getPresence();
+        const aiCollabs = collaborationAgent.getOnlineCollaborators();
+        
+        // Converter presença do Supabase em formato Collaborator
+        const humanCollabs: Collaborator[] = presence.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          role: 'Frontend',
+          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.name}`,
+          status: 'online',
+          lastAction: 'Visualizando Projeto'
+        }));
+
+        const allCollabs = [...humanCollabs, ...aiCollabs];
+        setCollaborators(allCollabs);
+        setActivities(collaborationAgent.getActivities());
+        
+        // Broadcast de pulsação para manter a conexão ativa
+        collaborationAgent.broadcastActivity('', 'Nexus Active');
       } catch (err) {
         console.error('⚠️ PresenceAvatars Sync Error:', err);
       }
@@ -27,7 +36,7 @@ const PresenceAvatars: React.FC = () => {
     updateLoop();
     const interval = setInterval(updateLoop, 3000);
     return () => clearInterval(interval);
-  }, [getCollabData, setCollaborators, setActivities]);
+  }, [setCollaborators, setActivities]);
 
   return (
     <div className="flex -space-x-2 overflow-hidden items-center group cursor-help">
