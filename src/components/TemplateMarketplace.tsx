@@ -10,7 +10,10 @@ import {
   Database, 
   TrendingUp, 
   ChevronRight,
-  Star
+  Star,
+  BarChart3,
+  Globe,
+  User
 } from 'lucide-react';
 import { useUI } from '../contexts/UIContext';
 import { useProjects } from '../contexts/ProjectContext';
@@ -81,6 +84,110 @@ const blueprints: Blueprint[] = [
     tags: ['API', 'SQL', 'Caching'],
     color: 'from-cyan-500 to-blue-600',
     industry: 'Infraestrutura'
+  },
+  {
+    id: 'ai-saas',
+    name: 'AI SaaS Dashboard',
+    description: 'Plataforma SaaS completa com gestão de subscrições, análise preditiva e suporte multi-tenant.',
+    category: 'Software',
+    icon: <Zap className="w-6 h-6" />,
+    tags: ['Next.js', 'AI', 'Stripe'],
+    color: 'from-blue-600 to-cyan-500',
+    popular: true,
+    industry: 'IA/SaaS'
+  },
+  {
+    id: 'digital-marketplace',
+    name: 'Marketplace Global',
+    description: 'Marketplace de ativos digitais com suporte a transações globais e painel de criadores.',
+    category: 'Vendas',
+    icon: <ShoppingBag className="w-6 h-6" />,
+    tags: ['React', 'Payments', 'E-commerce'],
+    color: 'from-pink-500 to-rose-600',
+    industry: 'Varejo'
+  },
+  {
+    id: 'fintech-hub',
+    name: 'Real-time FinTech Hub',
+    description: 'Hub financeiro com rastreamento de ativos em tempo real, carteiras multi-moeda e gráficos.',
+    category: 'Finanças',
+    icon: <BarChart3 className="w-6 h-6" />,
+    tags: ['FinTech', 'WebSockets', 'Crypto'],
+    color: 'from-blue-500 to-emerald-600',
+    popular: true,
+    industry: 'Banking'
+  },
+  {
+    id: 'healthtech',
+    name: 'Portal Telemedicina',
+    description: 'Portal seguro com vídeo consultas, registros de pacientes e agendamento inteligente.',
+    category: 'Saúde',
+    icon: <Smartphone className="w-6 h-6" />,
+    tags: ['HealthTech', 'Telemedicine', 'Next.js'],
+    color: 'from-red-500 to-pink-600',
+    industry: 'Saúde'
+  },
+  {
+    id: 'enterprise-lms',
+    name: 'Enterprise LMS Suite',
+    description: 'Sistema de gestão de aprendizagem corporativo com construtor de cursos e rastreamento.',
+    category: 'Educação',
+    icon: <Layout className="w-6 h-6" />,
+    tags: ['LMS', 'Education', 'B2B'],
+    color: 'from-indigo-600 to-blue-500',
+    industry: 'Educação'
+  },
+  {
+    id: 'ai-logistics',
+    name: 'AI Logistic Network',
+    description: 'Rede de logística inteligente com gestão de frota, rastreamento IA e otimização de rotas.',
+    category: 'Software',
+    icon: <Zap className="w-6 h-6" />,
+    tags: ['Logistics', 'AI', 'Node.js'],
+    color: 'from-amber-500 to-orange-600',
+    industry: 'Logística'
+  },
+  {
+    id: 'smart-realestate',
+    name: 'Smart Real Estate Engine',
+    description: 'Plataforma imobiliária com tours virtuais 360, avaliação IA e funil de vendas.',
+    category: 'Imóveis',
+    icon: <Globe className="w-6 h-6" />,
+    tags: ['RealEstate', '360-Tours', 'Next.js'],
+    color: 'from-emerald-400 to-teal-500',
+    industry: 'Varejo'
+  },
+  {
+    id: 'hr-automation',
+    name: 'Automated HR Suite',
+    description: 'Suíte de RH com triagem de currículos por IA, agendamento de entrevistas e onboarding.',
+    category: 'Software',
+    icon: <User className="w-6 h-6" />,
+    tags: ['HR', 'Automation', 'AI'],
+    color: 'from-blue-400 to-indigo-500',
+    industry: 'Recursos Humanos'
+  },
+  {
+    id: 'social-content',
+    name: 'Social Media Engine',
+    description: 'Motor de automação de conteúdo social com agendamento multirede e analytics.',
+    category: 'Marketing',
+    icon: <Smartphone className="w-6 h-6" />,
+    tags: ['Social', 'Automation', 'Ads'],
+    color: 'from-purple-400 to-indigo-600',
+    popular: true,
+    industry: 'Marketing'
+  },
+  {
+    id: 'urban-mobility',
+    name: 'Urban Mobility Manager',
+    description: 'Plataforma de gestão de mobilidade urbana com controle de micro-mobilidade e tráfego.',
+    category: 'Mobilidade',
+    icon: <Zap className="w-6 h-6" />,
+    tags: ['SmartCity', 'IoT', 'Tracking'],
+    color: 'from-blue-500 to-teal-400',
+    popular: true,
+    industry: 'Serviços'
   }
 ];
 
@@ -95,7 +202,7 @@ const TemplateMarketplace: React.FC = () => {
 
   if (!showTemplates) return null;
 
-  const categories = ['Todas', 'Recomendados', 'Vendas', 'Software', 'Finanças', 'Mobile', 'Dados'];
+  const categories = ['Todas', 'Recomendados', 'Vendas', 'Software', 'Finanças', 'Mobile', 'Dados', 'Saúde', 'Educação', 'Imóveis', 'Marketing', 'Mobilidade'];
 
   const filteredBlueprints = blueprints.filter(bp => {
     const matchesSearch = bp.name.toLowerCase().includes(searchTerm.toLowerCase()) || 

@@ -6,6 +6,8 @@ import CodeEditor from './components/CodeEditor';
 import TopBar from './components/TopBar';
 import Login from './components/Login';
 import Register from './components/Register';
+import ErrorBoundary from './components/ErrorBoundary';
+import StatusBar from './components/StatusBar';
 import { useProjects } from './contexts/ProjectContext';
 import { useAuth } from './contexts/AuthContext';
 import { useUI } from './contexts/UIContext';
@@ -20,7 +22,7 @@ const SuggestionsPanel = lazy(() => import('./components/SuggestionsPanel'));
 const DesignPilot = lazy(() => import('./components/DesignPilot'));
 const TimeScrubber = lazy(() => import('./components/TimeScrubber'));
 const VentureDashboard = lazy(() => import('./components/VentureDashboard'));
-const QuantumShield = lazy(() => import('./components/QuantumShield'));
+const CommunityArea = lazy(() => import('./components/CommunityArea'));
 
 function App() {
   const { currentProject } = useProjects();
@@ -31,10 +33,12 @@ function App() {
     showAgentReasoning,
     setShowAgentReasoning,
     agentName,
-    showDesignPilot,
-    setShowDesignPilot,
     showVentureDashboard,
-    setShowVentureDashboard
+    setShowVentureDashboard,
+    showDesignPilot, 
+    setShowDesignPilot,
+    showCommunity,
+    workspaceMode
   } = useUI();
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [generatedCode, setGeneratedCode] = useState('');
@@ -102,12 +106,13 @@ function App() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 overflow-hidden">
+    <ErrorBoundary>
+      <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 overflow-hidden">
       {/* Top Bar */}
       <TopBar onBackToWelcome={handleBackToWelcome} />
       
-      {/* Main Layout - Removed pt-12 to handle internal padding in components or topbar height */}
-      <div className="flex-1 flex overflow-hidden pt-12">
+      {/* Main Layout - Added pb-6 for StatusBar clearance */}
+      <div className="flex-1 flex overflow-hidden pt-12 pb-6">
         {/* Sidebar */}
         <div className="flex flex-col circuit-border animate-circuit-pulse border-t-0 border-l-0 border-b-0">
           <Sidebar 
@@ -116,25 +121,22 @@ function App() {
           />
         </div>
         
-        {/* Main Content Area - Closed Circuit Container */}
-        <div className="flex-1 flex overflow-hidden">
-          {/* Chat Area */}
-          <div className={`transition-all duration-300 circuit-border animate-circuit-pulse border-t-0 border-l-0 border-b-0 ${
+        {/* Main Content Area */}
+        <div className={`flex flex-1 overflow-hidden transition-all duration-300`}>
+          <div className={`transition-all duration-300 circuit-border animate-circuit-pulse border-t-0 border-l-0 border-b-0 overflow-hidden ${
             sidebarExpanded ? 'w-[calc(50%-10rem)]' : 'w-1/2'
           }`}>
             <ChatArea 
               onCodeGenerated={handleCodeGenerated} 
-              currentCode={generatedCode} 
+              currentCode={generatedCode}
             />
           </div>
-          
-          {/* Code Editor */}
-          <div className={`transition-all duration-300 ${
+          <div className={`flex-1 overflow-hidden transition-all duration-300 ${
             sidebarExpanded ? 'w-[calc(50%+10rem)]' : 'w-1/2'
           }`}>
             <CodeEditor 
               code={generatedCode} 
-              onCodeChange={handleCodeChange} 
+              onCodeChange={setGeneratedCode}
             />
           </div>
         </div>
@@ -158,12 +160,16 @@ function App() {
         <ActivityFeed />
         <ExportModal />
         <SuggestionsPanel />
-        <DesignPilot />
+        {showDesignPilot && <DesignPilot />}
         <TimeScrubber />
         {showVentureDashboard && <VentureDashboard />}
-        <QuantumShield />
+        {showCommunity && <CommunityArea />}
       </Suspense>
-    </div>
+
+      {/* System Status Feed */}
+      <StatusBar />
+      </div>
+    </ErrorBoundary>
   );
 }
 

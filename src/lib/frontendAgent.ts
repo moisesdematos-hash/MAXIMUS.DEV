@@ -1,18 +1,34 @@
 import { CreditManager } from './creditManager';
+import { AIService } from './aiService';
+import { logError } from './errorLogger';
 
 export class FrontendAgent {
   private creditManager = CreditManager.getInstance();
 
-  public async generateUI(prompt: string): Promise<{ success: boolean; code?: string; reasoning?: string; error?: string }> {
-    console.log(`🎨 FrontendAgent: Gerando UI para: "${prompt}"...`);
+  public async generateUI(prompt: string, modelId: string = 'maximus-neural'): Promise<{ success: boolean; code?: string; reasoning?: string; error?: string }> {
+    console.log(`🎨 FrontendAgent: Gerando UI para: "${prompt}" usando ${modelId}...`);
     
-    // Simulating credit consumption
-    this.creditManager.consumeCredits(10);
+    // Simulating credit consumption (Native model is free, handled in ChatArea/CreditManager logic potentially)
+    this.creditManager.consumeCredits(modelId === 'maximus-neural' ? 0 : 10);
     
-    const code = `<div className="p-4 bg-blue-500 text-white rounded shadow-lg animate-fade-in">\n  <h1>Generated UI for: ${prompt}</h1>\n</div>`;
-    const reasoning = `Decidi usar um container com azul de destaque e animação de fade-in para garantir uma primeira impressão moderna, seguindo o prompt do usuário.`;
-    
-    return { success: true, code, reasoning };
+    try {
+      const systemContext = "Você é o Agente Frontend. Sua tarefa é gerar exclusivamente o código React/TypeScript para a interface solicitada. Use Tailwind CSS para estilização moderna e Lucide React para ícones.";
+      const response = await AIService.generateResponse(modelId, `${systemContext}\n\nSolicitação: ${prompt}`);
+      
+      const codeMatch = response.match(/```(?:tsx|jsx|typescript|javascript)?\s*([\s\S]*?)\s*```/i);
+      const code = codeMatch ? codeMatch[1] : response;
+      const reasoning = `Gerei a interface solicitada usando ${modelId}, focando em componentes React funcionais e estilizados com Tailwind CSS.`;
+      
+      return { success: true, code, reasoning };
+    } catch (error: any) {
+      console.error('Erro no FrontendAgent:', error);
+      logError({
+        error_message: error.message || 'Erro no FrontendAgent',
+        severity: 'error',
+        stack_trace: error.stack
+      });
+      return { success: false, error: error.message };
+    }
   }
 
   public async correctUI(code: string, error: string): Promise<{ success: boolean; fixedCode?: string }> {

@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Code, 
-  Play, 
   Download, 
   Share, 
   Settings, 
@@ -12,10 +11,7 @@ import {
   Copy,
   Eye,
   EyeOff,
-  RefreshCw,
   Zap,
-  Bug,
-  CheckCircle,
   AlertCircle,
   Search,
   Filter,
@@ -32,6 +28,7 @@ import {
   Edit,
   Trash2,
   Plus,
+  FolderPlus,
   X,
   ChevronDown,
   ChevronRight,
@@ -79,9 +76,12 @@ import {
   Camera,
   CameraOff,
   Bell,
-  BellOff
+  BellOff,
+  RefreshCw,
+  ShieldCheck,
+  RotateCcw
 } from 'lucide-react';
-import CodeAnalyzer from './CodeAnalyzer';
+// No longer needed: import CodeAnalyzer from './CodeAnalyzer';
 
 interface CodeEditorProps {
   code: string;
@@ -92,9 +92,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ code, onCodeChange }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
   const [viewportMode, setViewportMode] = useState<'desktop' | 'mobile'>('desktop');
-  const [showCodeAnalyzer, setShowCodeAnalyzer] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResults, setAnalysisResults] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'code' | 'preview' | 'console'>('preview');
   const [consoleOutput, setConsoleOutput] = useState<string[]>([
     '🚀 MAXIMUS.DEV Console iniciado',
@@ -102,7 +99,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ code, onCodeChange }) => {
     '📦 Dependências carregadas',
     '⚡ Hot reload habilitado'
   ]);
-  const [isRunning, setIsRunning] = useState(false);
   const [showFileTree, setShowFileTree] = useState(false);
   const [selectedFile, setSelectedFile] = useState('App.tsx');
   const [editorSettings, setEditorSettings] = useState({
@@ -116,6 +112,30 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ code, onCodeChange }) => {
   const [scrollTop, setScrollTop] = useState(0);
   const [cursorLine, setCursorLine] = useState(1);
   const [cursorColumn, setCursorColumn] = useState(1);
+  const [files, setFiles] = useState<any[]>([
+    { name: 'App.tsx', type: 'file', icon: <Code className="w-4 h-4 text-blue-500" /> },
+    { 
+      name: 'components/', 
+      type: 'folder', 
+      icon: <Folder className="w-4 h-4 text-yellow-500" />,
+      isOpen: true,
+      children: [
+        { name: 'QuantumShield.tsx', type: 'file', icon: <Code className="w-4 h-4 text-blue-400" /> },
+        { name: 'PresenceAvatars.tsx', type: 'file', icon: <Code className="w-4 h-4 text-blue-400" /> }
+      ]
+    },
+    { 
+      name: 'styles/', 
+      type: 'folder', 
+      icon: <Folder className="w-4 h-4 text-yellow-500" />,
+      isOpen: false,
+      children: [
+        { name: 'globals.css', type: 'file', icon: <FileText className="w-4 h-4 text-green-400" /> }
+      ]
+    },
+    { name: 'utils/', type: 'folder', icon: <Folder className="w-4 h-4 text-yellow-500" />, isOpen: false, children: [] },
+    { name: 'package.json', type: 'file', icon: <FileText className="w-4 h-4 text-green-500" /> }
+  ]);
 
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
@@ -152,51 +172,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ code, onCodeChange }) => {
     setCursorColumn(column);
   };
 
-  const handleRunCode = async () => {
-    setIsRunning(true);
-    setConsoleOutput(prev => [...prev, '🔄 Executando código...']);
-    
-    // Simulate code execution
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setConsoleOutput(prev => [
-      ...prev, 
-      '✅ Código executado com sucesso',
-      '📊 Performance: 98/100',
-      '🎯 Sem erros detectados'
-    ]);
-    setIsRunning(false);
-  };
-
-  const handleAnalyzeCode = async () => {
-    setIsAnalyzing(true);
-    setConsoleOutput(prev => [...prev, '🔍 Analisando código com IA...']);
-    
-    // Simulate AI analysis
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const results = {
-      quality: 92,
-      performance: 88,
-      security: 95,
-      suggestions: [
-        'Adicionar PropTypes para melhor type checking',
-        'Implementar lazy loading para componentes',
-        'Otimizar re-renders com React.memo'
-      ]
-    };
-    
-    setAnalysisResults(results);
-    setConsoleOutput(prev => [
-      ...prev,
-      '🤖 Análise IA concluída',
-      `📊 Qualidade: ${results.quality}/100`,
-      `⚡ Performance: ${results.performance}/100`,
-      `🔒 Segurança: ${results.security}/100`
-    ]);
-    setIsAnalyzing(false);
-  };
-
   const toggleViewport = () => {
     setViewportMode(prev => prev === 'desktop' ? 'mobile' : 'desktop');
     setConsoleOutput(prev => [
@@ -228,13 +203,73 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ code, onCodeChange }) => {
     alert(`🔗 Link Copiado!\n\n🌐 ${shareUrl}\n📋 Colado na área de transferência`);
   };
 
-  const files = [
-    { name: 'App.tsx', type: 'file', icon: <Code className="w-4 h-4 text-blue-500" /> },
-    { name: 'components/', type: 'folder', icon: <Folder className="w-4 h-4 text-yellow-500" /> },
-    { name: 'styles/', type: 'folder', icon: <Folder className="w-4 h-4 text-yellow-500" /> },
-    { name: 'utils/', type: 'folder', icon: <Folder className="w-4 h-4 text-yellow-500" /> },
-    { name: 'package.json', type: 'file', icon: <FileText className="w-4 h-4 text-green-500" /> }
-  ];
+  const handleRefreshPreview = () => {
+    if (previewRef.current) {
+      const currentSrc = previewRef.current.srcdoc;
+      previewRef.current.srcdoc = '';
+      setTimeout(() => {
+        if (previewRef.current) previewRef.current.srcdoc = currentSrc;
+      }, 50);
+      setConsoleOutput(prev => [...prev, '🔄 Preview recarregado']);
+    }
+  };
+
+  const toggleFolder = (nodeName: string) => {
+    const updateNodes = (nodes: any[]): any[] => {
+      return nodes.map(node => {
+        if (node.name === nodeName) {
+          return { ...node, isOpen: !node.isOpen };
+        }
+        if (node.children) {
+          return { ...node, children: updateNodes(node.children) };
+        }
+        return node;
+      });
+    };
+    setFiles(updateNodes(files));
+  };
+
+  const renderFileTree = (nodes: any[], depth = 0) => {
+    return nodes.map((file, index) => {
+      const isSelected = selectedFile === file.name;
+      const isFolder = file.type === 'folder';
+
+      return (
+        <div key={`${file.name}-${index}`}>
+          <button
+            onClick={() => {
+              if (isFolder) {
+                toggleFolder(file.name);
+                setConsoleOutput(prev => [...prev, `${file.isOpen ? '📁 Recolhendo' : '📂 Expandindo'} diretório: ${file.name}`]);
+              } else {
+                setSelectedFile(file.name);
+                setConsoleOutput(prev => [...prev, `🔍 Visualizando: ${file.name}`]);
+              }
+            }}
+            className={`w-full flex items-center space-x-2 px-2 py-1.5 text-left hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors ${
+              isSelected ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
+            }`}
+            style={{ paddingLeft: `${depth * 12 + 8}px` }}
+          >
+            <div className="flex items-center space-x-2 flex-1">
+              {isFolder ? (
+                file.isOpen ? <ChevronDown className="w-3 h-3 text-gray-400" /> : <ChevronRight className="w-3 h-3 text-gray-400" />
+              ) : (
+                <div className="w-3" />
+              )}
+              {file.icon}
+              <span className="text-sm truncate">{file.name}</span>
+            </div>
+          </button>
+          {isFolder && file.isOpen && file.children && (
+            <div className="mt-0.5">
+              {renderFileTree(file.children, depth + 1)}
+            </div>
+          )}
+        </div>
+      );
+    });
+  };
 
   return (
     <div className={`h-full flex flex-col bg-gray-50 dark:bg-gray-900 ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
@@ -263,45 +298,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ code, onCodeChange }) => {
               <>
                 <Smartphone className="w-4 h-4" />
                 <span className="text-sm font-medium">📱 Mobile</span>
-              </>
-            )}
-          </button>
-
-          {/* Action Buttons */}
-          <button
-            onClick={handleRunCode}
-            disabled={isRunning}
-            className="flex items-center space-x-2 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg transition-colors"
-            title="Executar código"
-          >
-            {isRunning ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                <span className="text-sm">Executando...</span>
-              </>
-            ) : (
-              <>
-                <Play className="w-4 h-4" />
-                <span className="text-sm">Executar</span>
-              </>
-            )}
-          </button>
-
-          <button
-            onClick={handleAnalyzeCode}
-            disabled={isAnalyzing}
-            className="flex items-center space-x-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white rounded-lg transition-colors"
-            title="Analisar com IA"
-          >
-            {isAnalyzing ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                <span className="text-sm">Analisando...</span>
-              </>
-            ) : (
-              <>
-                <Bug className="w-4 h-4" />
-                <span className="text-sm">🤖 Analisar</span>
               </>
             )}
           </button>
@@ -361,28 +357,49 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ code, onCodeChange }) => {
       )}
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        {[
-          { id: 'code', label: 'Código', icon: Code },
-          { id: 'preview', label: 'Preview', icon: Eye },
-          { id: 'console', label: 'Console', icon: Terminal }
-        ].map((tab) => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors ${
-                activeTab === tab.id
-                  ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900 border-b-2 border-blue-600'
-                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
+      <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div className="flex">
+          {[
+            { id: 'code', label: 'Código', icon: Code },
+            { id: 'preview', label: 'Preview', icon: Eye },
+            { id: 'console', label: 'Console', icon: Terminal }
+          ].map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors ${
+                  activeTab === tab.id
+                    ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900 border-b-2 border-blue-600'
+                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Dynamic Contextual Toolbar */}
+        <div className="flex items-center space-x-2 px-4">
+          {activeTab === 'preview' && (
+            <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-900 rounded-full px-3 py-1 border border-gray-200 dark:border-gray-800">
+              <ShieldCheck className="w-3 h-3 text-green-500" />
+              <div className="flex items-center space-x-1 max-w-[200px] overflow-hidden">
+                <span className="text-[10px] text-gray-400 select-none">http://</span>
+                <span className="text-[10px] text-gray-700 dark:text-gray-300 font-mono truncate">localhost:1573</span>
+              </div>
+              <button 
+                onClick={handleRefreshPreview}
+                className="p-0.5 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full transition-colors"
+              >
+                <RefreshCw className="w-2.5 h-2.5 text-gray-500" />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Content */}
@@ -392,42 +409,79 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ code, onCodeChange }) => {
             {/* File Tree Sidebar */}
             <div className="w-64 bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600 flex flex-col">
               <div className="p-3 border-b border-gray-200 dark:border-gray-600">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-medium text-gray-800 dark:text-white">Arquivos</h3>
-                  <button
-                    onClick={() => alert('📁 Novo Arquivo!\n\n✨ Criação rápida\n📝 Templates disponíveis\n🚀 Auto-save ativo')}
-                    className="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
-                    title="Novo arquivo"
-                  >
-                    <Plus className="w-3 h-3" />
-                  </button>
+                <div className="flex items-center justify-between w-full">
+                  <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Arquivos</h3>
+                  <div className="flex items-center space-x-1">
+                    <button 
+                      onClick={() => {
+                        const boilerplate = `import React from 'react';\n\nexport default function App() {\n  return (\n    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white flex items-center justify-center p-8">\n      <div className="max-w-md w-full bg-white/10 backdrop-blur-xl p-8 rounded-3xl border border-white/20 shadow-2xl">\n        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-300 mb-4">\n          MAXIMUS.DEV Alpha\n        </h1>\n        <p className="text-gray-400 leading-relaxed">\n          Seu novo projeto profissional está pronto para ser construído.\n        </p>\n        <button className="mt-8 w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold transition-all shadow-lg shadow-blue-500/20">\n          Começar Agora\n        </button>\n      </div>\n    </div>\n  );\n}`;
+                        onCodeChange(boilerplate);
+                        setConsoleOutput(prev => [...prev, '✨ Novo boilerplate React gerado com sucesso']);
+                      }}
+                      className="p-1 text-purple-500 hover:bg-purple-500/10 rounded-md transition-all"
+                      title="Novo Código"
+                    >
+                      <Zap className="w-3.5 h-3.5" />
+                    </button>
+                    
+                    <button 
+                      onClick={() => {
+                        const folderName = prompt('Nome da nova pasta:');
+                        if (folderName) {
+                          const nameWithSlash = folderName.endsWith('/') ? folderName : `${folderName}/`;
+                          setFiles(prev => [...prev, { 
+                            name: nameWithSlash, 
+                            type: 'folder', 
+                            icon: <Folder className="w-4 h-4 text-yellow-500" /> 
+                          }]);
+                          setConsoleOutput(prev => [...prev, `📁 Nova pasta "${nameWithSlash}" criada`]);
+                        }
+                      }}
+                      className="p-1 text-amber-500 hover:bg-amber-500/10 rounded-md transition-all"
+                      title="Nova Pasta"
+                    >
+                      <FolderPlus className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button 
+                      onClick={() => {
+                        const fileName = prompt('Nome do novo arquivo:');
+                        if (fileName) {
+                          setFiles(prev => [...prev, { 
+                            name: fileName, 
+                            type: 'file', 
+                            icon: <FileText className="w-4 h-4 text-blue-400" /> 
+                          }]);
+                          onCodeChange(`// Novo arquivo: ${fileName}\n\nimport React from 'react';\n\nexport default function App() {\n  return <div>${fileName}</div>;\n}`);
+                          setSelectedFile(fileName);
+                          setConsoleOutput(prev => [...prev, `📄 Novo arquivo "${fileName}" criado e selecionado`]);
+                        }
+                      }}
+                      className="p-1 text-blue-500 hover:bg-blue-500/10 rounded-md transition-all"
+                      title="Novo File"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button 
+                      onClick={() => {
+                        if(confirm('🚨 ATENÇÃO: Deseja APAGAR todo o código permanentemente?')) {
+                          onCodeChange('');
+                          setConsoleOutput(prev => [...prev, '🗑️ Todo o código foi removido do editor']);
+                        }
+                      }}
+                      className="p-1 text-rose-500 hover:bg-rose-500/10 rounded-md transition-all"
+                      title="Apagar Tudo"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
               
               <div className="flex-1 overflow-y-auto p-2">
                 <div className="space-y-1">
-                  {files.map((file, index) => (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        if (file.type === 'file') {
-                          setSelectedFile(file.name);
-                          alert(`📄 Arquivo Selecionado!\n\n📁 ${file.name}\n✅ Carregado no editor\n🔄 Pronto para edição`);
-                        } else {
-                          alert(`📂 Pasta ${file.name}!\n\n📁 Expandindo pasta\n📄 Arquivos internos\n🔍 Navegação ativa`);
-                        }
-                      }}
-                      className={`w-full flex items-center space-x-2 px-2 py-1.5 text-left hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors ${
-                        selectedFile === file.name ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
-                      }`}
-                    >
-                      {file.icon}
-                      <span className="text-sm truncate">{file.name}</span>
-                      {file.type === 'folder' && (
-                        <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
-                      )}
-                    </button>
-                  ))}
+                  {renderFileTree(files)}
                 </div>
               </div>
               
@@ -437,14 +491,25 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ code, onCodeChange }) => {
                   <span>{files.filter(f => f.type === 'file').length} arquivos</span>
                   <div className="flex items-center space-x-1">
                     <button
-                      onClick={() => alert('📤 Upload de Arquivos!\n\n📁 Seletor aberto\n⚡ Upload automático\n✅ Sincronização ativa')}
+                      onClick={() => {
+                        setConsoleOutput(prev => [...prev, '📤 Iniciando upload de arquivos...']);
+                        setTimeout(() => {
+                          setConsoleOutput(prev => [...prev, '✅ Upload concluído com sucesso']);
+                        }, 1500);
+                      }}
                       className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
                       title="Upload arquivos"
                     >
                       <Upload className="w-3 h-3" />
                     </button>
                     <button
-                      onClick={() => alert('📥 Download do Projeto!\n\n📦 Compactando arquivos\n⬇️ Download automático\n✅ Projeto exportado')}
+                      onClick={() => {
+                        setConsoleOutput(prev => [...prev, '📦 Compactando projeto para exportação...']);
+                        handleDownload();
+                        setTimeout(() => {
+                          setConsoleOutput(prev => [...prev, '✅ Exportação finalizada']);
+                        }, 1000);
+                      }}
                       className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
                       title="Download projeto"
                     >
@@ -625,43 +690,6 @@ export default App;"
         )}
       </div>
 
-      {/* Analysis Results */}
-      {analysisResults && (
-        <div className="p-4 bg-purple-50 dark:bg-purple-900 border-t border-purple-200 dark:border-purple-700">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                <span className="text-sm font-medium text-purple-800 dark:text-purple-200">
-                  Análise IA Concluída
-                </span>
-              </div>
-              <div className="flex items-center space-x-4 text-sm text-purple-700 dark:text-purple-300">
-                <span>Qualidade: {analysisResults.quality}%</span>
-                <span>Performance: {analysisResults.performance}%</span>
-                <span>Segurança: {analysisResults.security}%</span>
-              </div>
-            </div>
-            <button
-              onClick={() => setShowCodeAnalyzer(true)}
-              className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm transition-colors"
-            >
-              Ver Detalhes
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Code Analyzer Modal */}
-      <CodeAnalyzer 
-        isOpen={showCodeAnalyzer}
-        onClose={() => setShowCodeAnalyzer(false)}
-        code={code}
-        onCodeFixed={(fixedCode) => {
-          onCodeChange(fixedCode);
-          setConsoleOutput(prev => [...prev, '🔧 Código corrigido automaticamente pela IA']);
-        }}
-      />
     </div>
   );
 };

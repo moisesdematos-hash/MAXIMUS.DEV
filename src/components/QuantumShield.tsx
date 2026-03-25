@@ -1,20 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldAlert, ShieldCheck, Lock, Eye, Zap, Search } from 'lucide-react';
+import { ShieldCheck, Lock, Zap } from 'lucide-react';
 
-const QuantumShield: React.FC = () => {
+interface QuantumShieldProps {
+  isMinimal?: boolean;
+}
+
+const QuantumShield: React.FC<QuantumShieldProps> = ({ isMinimal = false }) => {
   const [isActive, setIsActive] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
-    // Simular ativação automática de proteção
     const timer = setTimeout(() => setIsActive(true), 1500);
     return () => clearTimeout(timer);
   }, []);
 
   if (!isActive) return null;
 
+  if (isMinimal) {
+    return (
+      <div 
+        className={`flex items-center space-x-2 px-2 py-0.5 rounded-full border transition-all duration-300 ${isSyncing ? 'border-purple-500 bg-purple-500/10' : 'border-cyan-500/30 bg-cyan-500/5'}`}
+        title="Quantum Shield: Neural Assets Secured"
+      >
+        <div className={`w-1.5 h-1.5 rounded-full ${isSyncing ? 'bg-purple-500 animate-pulse' : 'bg-cyan-500'}`} />
+        <span className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">Shield: Active</span>
+      </div>
+    );
+  }
+
   return (
-    <div className="fixed bottom-4 left-4 z-50 animate-in slide-in-from-left-8 duration-500">
+    <div className="fixed bottom-10 left-4 z-50 animate-in slide-in-from-left-8 duration-500">
       <div className={`p-1 rounded-2xl bg-gradient-to-br transition-all duration-700 ${isSyncing ? 'from-purple-500 to-pink-500 scale-110 shadow-purple-500/50' : 'from-cyan-500 to-blue-500 shadow-blue-500/30'} shadow-2xl`}>
         <div className="bg-white dark:bg-gray-950 rounded-xl p-3 flex items-center space-x-3 border border-white/10">
           <div className={`p-2 rounded-lg ${isSyncing ? 'bg-purple-100 dark:bg-purple-900/30' : 'bg-cyan-100 dark:bg-cyan-900/30'}`}>

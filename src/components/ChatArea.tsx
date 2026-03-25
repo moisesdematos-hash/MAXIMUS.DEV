@@ -5,18 +5,34 @@ import {
   Paperclip, 
   Bot,
   Trash2,
-  Settings
+  Settings,
+  MessageSquare,
+  Crown,
+  ClipboardList,
+  Zap,
+  Terminal,
+  Clock,
+  LayoutGrid,
+  Layout,
+  Cpu,
+  Github,
+  Mic
 } from 'lucide-react';
 import ProcessingSteps from './ProcessingSteps';
 import DependencyManager from './DependencyManager';
+import OpenClawPanel from './OpenClawPanel';
+import ActivityFeed from './ActivityFeed';
+import SubscriptionView from './SubscriptionView';
 import AIAssistant from './AIAssistant';
 import TemplatesModal from './TemplatesModal';
 import { useProjects } from '../contexts/ProjectContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useMultiAgent } from '../hooks/useMultiAgent';
 import { useUI } from '../contexts/UIContext';
+import { MessageService } from '../lib/messageService';
 import { getTranslation } from '../lib/i18n';
-import { FileProcessor, FileContext } from '../utils/fileProcessor';
-import { FolderPlus, FileArchive } from 'lucide-react';
+import { FileProcessor } from '../utils/fileProcessor';
+// Removed unused FolderPlus import
 
 interface Message {
   id: string;
@@ -66,14 +82,22 @@ interface ChatAreaProps {
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({ onCodeGenerated, currentCode }) => {
-  const { addProject } = useProjects();
+  const { currentProject } = useProjects();
+  const { user } = useAuth();
   const { orchestrateFeature } = useMultiAgent();
   const { 
     setShowAgentReasoning, 
     setAgentName,
     setSecurityStatus,
     setVulnerabilities,
-    language
+    language,
+    chatInteractionType,
+    setChatInteractionType,
+    isPlanningActive,
+    setIsPlanningActive,
+    workspaceMode,
+    setWorkspaceMode,
+    setShowIntegrations
   } = useUI();
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -88,6 +112,19 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onCodeGenerated, currentCode }) => 
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [showDependencyManager, setShowDependencyManager] = useState(false);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
+  
+  const models = [
+    { id: 'gpt-4o', name: 'GPT-4o', provider: 'OpenAI', color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20' },
+    { id: 'claude-3-5', name: 'Claude 3.5', provider: 'Anthropic', color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20' },
+    { id: 'claude-4-6', name: 'Claude 4.6 Opus', provider: 'Anthropic', color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20' },
+    { id: 'gemini-1-5', name: 'Gemini 1.5', provider: 'Google', color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+    { id: 'gemini-pro', name: 'Gemini Pro', provider: 'Google', color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/20' },
+    { id: 'llama-3', name: 'Llama 3', provider: 'Meta', color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+    { id: 'mistral-large', name: 'Mistral', provider: 'Mistral', color: 'text-rose-600', bg: 'bg-rose-50 dark:bg-rose-900/20' },
+    { id: 'maximus-neural', name: 'MAXIMUS Neural', provider: 'Native', color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20', isNative: true }
+  ];
+  const [selectedModel, setSelectedModel] = useState(models[0].id);
+  const [showModelSelector, setShowModelSelector] = useState(false);
   const [showTemplatesModal, setShowTemplatesModal] = useState(false);
   const [aiProvider, setAiProvider] = useState<'openai' | 'ollama'>('openai');
   const [ollamaConfig] = useState<OllamaConfig>(DEFAULT_OLLAMA_CONFIG);
@@ -99,11 +136,53 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onCodeGenerated, currentCode }) => 
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  useEffect(() => {
+    const loadMessages = async () => {
+      if (currentProject?.id) {
+        setIsProcessing(true);
+        const { data, error } = await MessageService.getProjectMessages(currentProject.id);
+        if (!error && data) {
+          const formattedMessages: Message[] = data.map(m => ({
+            id: m.id,
+            type: m.role === 'assistant' ? 'ai' : m.role as any,
+            content: m.content,
+            timestamp: new Date(m.created_at)
+          }));
+          setMessages(formattedMessages);
+        } else {
+          // Default welcome message if no history
+          setMessages([
+            {
+              id: '1',
+              type: 'ai',
+              content: `Bem-vindo ao projeto **${currentProject.name}**! Como posso ajudar hoje?`,
+              timestamp: new Date(),
+            }
+          ]);
+        }
+        setIsProcessing(false);
+      }
+    };
+
+    loadMessages();
+  }, [currentProject?.id]);
+
   useEffect(scrollToBottom, [messages]);
 
-  const simulateAIResponse = async (userMessage: string) => {
+  const handleSendMessage = async (userMessage: string) => {
     setIsProcessing(true);
     
+    // Save user message to Supabase
+    if (user && currentProject?.id) {
+      await MessageService.saveMessage({
+        projectId: currentProject.id,
+        userId: user.id,
+        role: 'user',
+        content: userMessage,
+        modelId: selectedModel
+      });
+    }
+
     // Choose AI provider
     if (aiProvider === 'ollama') {
       await handleOllamaResponse(userMessage);
@@ -151,6 +230,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onCodeGenerated, currentCode }) => 
 
       const data = await response.json();
       const aiResponse = data.response || 'Desculpe, não consegui processar sua solicitação.';
+
+      // Save AI message to Supabase
+      if (user && currentProject?.id) {
+        await MessageService.saveMessage({
+          projectId: currentProject.id,
+          userId: user.id,
+          role: 'assistant',
+          content: aiResponse,
+          modelId: selectedModel
+        });
+      }
 
       // Update message with Ollama response
       setMessages((prev: Message[]) => prev.map((msg: Message) =>
@@ -217,12 +307,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onCodeGenerated, currentCode }) => 
       // Use the actual Orchestrator with full message history for context
       const result = await orchestrateFeature(
         `Contexto atual do código:\n${currentCode}\n${contextFromFiles}\n\nSolicitação do usuário: ${userMessage}`,
-        messages
+        messages,
+        selectedModel,
+        currentProject?.id
       );
 
       // Sincronizar Segurança com UI
       if (result.securityStatus) {
-        setSecurityStatus(result.securityStatus.level);
+        setSecurityStatus(result.securityStatus);
         setVulnerabilities(result.security || []);
       }
 
@@ -253,6 +345,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onCodeGenerated, currentCode }) => 
           ? { ...msg, content: finalContent, isStreaming: false }
           : msg
       ));
+
+      // Save AI message to Supabase
+      if (user && currentProject?.id) {
+        await MessageService.saveMessage({
+          projectId: currentProject.id,
+          userId: user.id,
+          role: 'assistant',
+          content: finalContent,
+          modelId: selectedModel
+        });
+      }
 
       // In a real scenario, we might want to show both or a combined view.
       onCodeGenerated(result.frontend.code || '');
@@ -291,8 +394,26 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onCodeGenerated, currentCode }) => 
       textareaRef.current.style.height = 'auto';
     }
 
-    await simulateAIResponse(inputValue);
+    await handleSendMessage(inputValue);
   };
+  const handleTemplateSelect = (template: Template) => {
+    const templatePrompt = `Use o template "${template.name}" como base: ${template.description}. 
+    Tecnologia recomendada: ${template.type}. 
+    Principais características: ${template.features.join(', ')}.`;
+    
+    setInputValue(templatePrompt);
+    setShowTemplatesModal(false);
+    
+    // Auto-focus and resize textarea
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        textareaRef.current.style.height = 'auto';
+        textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
+      }
+    }, 100);
+  };
+
 
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputValue(e.target.value);
@@ -300,135 +421,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onCodeGenerated, currentCode }) => 
     // Auto-resize textarea
     const textarea = e.target;
     textarea.style.height = 'auto';
-    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+    textarea.style.height = Math.min(textarea.scrollHeight, 240) + 'px';
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit(e as unknown as React.FormEvent);
-    }
-  };
-
-  const handleTemplateSelect = async (template: Template) => {
-    // Add user message
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      type: 'user',
-      content: `🎨 Carregar template: ${template.name}`,
-      timestamp: new Date(),
-    };
-    setMessages((prev: Message[]) => [...prev, userMessage]);
-
-    // Start processing
-    setIsProcessing(true);
-    setAgentName('Template-Loader');
-    setShowAgentReasoning(true);
-
-    // Add AI response with streaming
-    const aiMessageId = (Date.now() + 1).toString();
-    const aiMessage: Message = {
-      id: aiMessageId,
-      type: 'ai',
-      content: '',
-      timestamp: new Date(),
-      isStreaming: true,
-    };
-    setMessages(prev => [...prev, aiMessage]);
-
-    // Simulate AI processing steps
-    const steps = [
-      `🎯 Carregando template "${template.name}"...`,
-      '🤖 IA analisando estrutura do template...',
-      '📦 Configurando dependências automáticas...',
-      '🎨 Aplicando design system...',
-      '⚡ Otimizando performance...',
-      '🔧 Configurando funcionalidades...',
-      '✅ Template aplicado com sucesso!'
-    ];
-
-    for (let i = 0; i < steps.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      setMessages((prev: Message[]) => prev.map((msg: Message) => 
-        msg.id === aiMessageId 
-          ? { ...msg, content: steps.slice(0, i + 1).join('\n\n') }
-          : msg
-      ));
-    }
-
-    // Finish streaming
-    setMessages((prev: Message[]) => prev.map((msg: Message) => 
-      msg.id === aiMessageId 
-        ? { ...msg, isStreaming: false }
-        : msg
-    ));
-
-    // Hide reasoning if it was shown (though templates have their own steps, we can use the panel too)
-    setShowAgentReasoning(false);
-
-    // Generate code based on template
-    const templateCode = generateTemplateCode(template);
-    onCodeGenerated(templateCode);
-
-    // Create project
-    addProject({
-      name: template.name,
-      description: template.description,
-      type: template.type,
-      status: 'active',
-      collaborators: 1,
-      isStarred: false,
-      tags: template.tags,
-      size: `${Math.round(templateCode.length / 1024 * 10) / 10} KB`,
-      framework: template.type === 'react' ? 'React + TypeScript' : 
-                template.type === 'vue' ? 'Vue.js + TypeScript' :
-                template.type === 'next' ? 'Next.js + TypeScript' :
-                template.type === 'angular' ? 'Angular + TypeScript' :
-                'HTML + CSS + JS',
-      code: templateCode,
-      version: '1.0.0',
-      dependencies: template.type === 'react' ? ['react', 'react-dom', 'typescript', 'tailwindcss'] :
-                    template.type === 'vue' ? ['vue', 'typescript', 'tailwindcss'] :
-                    template.type === 'next' ? ['next', 'react', 'react-dom', 'typescript'] :
-                    ['typescript', 'tailwindcss'],
-      features: template.features,
-      analytics: {
-        views: 1,
-        deploys: 0,
-        performance: Math.floor(Math.random() * 20) + 80
-      }
-    });
-
-    setIsProcessing(false);
-  };
-
-  const generateTemplateCode = (template: any): string => {
-    switch (template.id) {
-      case '1': // E-commerce Moderno
-        return generateEcommerceCode();
-      case '2': // Dashboard Analytics  
-        return generateDashboardCode();
-      case '3': // Blog Pessoal
-        return generateBlogCode();
-      case '4': // Portfolio Criativo
-        return generatePortfolioCode();
-      case '5': // Landing Page SaaS
-        return generateLandingCode();
-      case '6': // App Mobile UI Kit
-        return generateMobileUICode();
-      case '7': // Admin Panel Pro
-        return generateAdminPanelCode();
-      case '8': // Social Media App
-        return generateSocialAppCode();
-      case '9': // SaaS Moderno
-        return generateSaaSCode();
-      case '10': // Uber Clone
-        return generateUberCloneCode();
-      default:
-        return generateDefaultTemplateCode(template);
-    }
-  };
 
   const generateEcommerceCode = (): string => {
     return `import React, { useState, useEffect } from 'react';
@@ -2402,26 +2397,9 @@ function Counter() {
             </button>
           </div>
         </div>
-        
-        {history.length > 1 && (
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="text-sm font-medium text-gray-700 mb-2">Histórico:</h3>
-            <div className="flex flex-wrap gap-2">
-              {history.slice(-5).map((value, index) => (
-                <span
-                  key={index}
-                  className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm"
-                >
-                  {value}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        <div className="mt-6 text-center text-sm text-gray-500">
-  const generateSocialAppCode = (): string => {
-    return `// Redesigned Social App Logic\nimport React from 'react';\n\nexport default function SocialApp() { ... }`;
+      </div>
+    );
+}`;
   };
 
   return (
@@ -2434,6 +2412,55 @@ function Counter() {
           </div>
           <span className="text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Assistant</span>
         </div>
+
+        {/* Interaction Mode Switcher */}
+        <div className="flex items-center bg-gray-200/50 dark:bg-gray-800/50 rounded-md p-0.5 border border-gray-300/30 dark:border-gray-700/30">
+          <button 
+            onClick={() => setChatInteractionType('chat')}
+            className={`flex items-center space-x-1 px-2 py-0.5 rounded text-[9px] font-bold transition-all duration-300 ${
+              chatInteractionType === 'chat' 
+                ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400' 
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+          >
+            <MessageSquare className="w-2.5 h-2.5" />
+            <span>Chat</span>
+          </button>
+          <button 
+            onClick={() => setChatInteractionType('subscription')}
+            className={`flex items-center space-x-1 px-2 py-0.5 rounded text-[9px] font-bold transition-all duration-300 ${
+              chatInteractionType === 'subscription' 
+                ? 'bg-white dark:bg-gray-700 shadow-sm text-purple-600 dark:text-purple-400' 
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+          >
+            <Crown className="w-2.5 h-2.5" />
+            <span>Subscrição</span>
+          </button>
+          <button 
+            onClick={() => setChatInteractionType('claw')}
+            className={`flex items-center space-x-1 px-2 py-0.5 rounded text-[9px] font-bold transition-all duration-300 ${
+              chatInteractionType === 'claw' 
+                ? 'bg-white dark:bg-gray-700 shadow-sm text-orange-600 dark:text-orange-400' 
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+          >
+            <Terminal className="w-2.5 h-2.5" />
+            <span>OpenClaw</span>
+          </button>
+          <button 
+            onClick={() => setChatInteractionType('history')}
+            className={`flex items-center space-x-1 px-2 py-0.5 rounded text-[9px] font-bold transition-all duration-300 ${
+              chatInteractionType === 'history' 
+                ? 'bg-white dark:bg-gray-700 shadow-sm text-emerald-600 dark:text-emerald-400' 
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+          >
+            <Clock className="w-2.5 h-2.5" />
+            <span>Histórico</span>
+          </button>
+        </div>
+
         <div className="flex items-center space-x-1">
           <button 
             onClick={() => setMessages([])}
@@ -2451,48 +2478,66 @@ function Counter() {
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        {messages.map((message: Message) => (
-          <div
-            key={message.id}
-            className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
-            <div className={`max-w-[80%] ${message.type === 'user' ? 'order-2' : 'order-1'}`}>
-              <div
-                className={`px-4 py-3 rounded-2xl ${
-                  message.type === 'user'
-                    ? 'bg-blue-600 text-white ml-4'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white mr-4'
-                }`}
-              >
-                <p className="whitespace-pre-wrap">
-                  {message.content}
-                  {message.isStreaming && (
-                    <span className="inline-block w-2 h-5 bg-current ml-1 animate-pulse" />
-                  )}
-                </p>
-              </div>
-              <p className={`text-xs text-gray-500 mt-1 ${
-                message.type === 'user' ? 'text-right mr-4' : 'text-left ml-4'
-              }`}>
-                {message.timestamp.toLocaleTimeString()}
-              </p>
-            </div>
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-              message.type === 'user' 
-                ? 'bg-blue-600 order-1' 
-                : 'bg-gray-600 dark:bg-gray-600 order-2'
-            }`}>
-              {message.type === 'user' ? (
-                <span className="text-white font-medium text-sm">U</span>
-              ) : (
-                <Bot className="w-5 h-5 text-white" />
-              )}
-            </div>
+      {/* Messages / OpenClaw Panel */}
+      <div className="flex-1 overflow-y-auto p-0 space-y-6 overflow-x-hidden relative">
+        {chatInteractionType === 'claw' ? (
+          <div className="absolute inset-0 overflow-hidden">
+            <OpenClawPanel />
           </div>
-        ))}
-        <div ref={messagesEndRef} />
+        ) : chatInteractionType === 'subscription' ? (
+          <div className="h-full">
+            <SubscriptionView />
+          </div>
+        ) : chatInteractionType === 'history' ? (
+          <div className="h-full overflow-y-auto">
+            <ActivityFeed isEmbedded />
+          </div>
+        ) : (
+          <div className="p-4 space-y-6">
+            {messages.map((message: Message) => (
+              <div
+                key={message.id}
+                className={`flex w-full mb-4 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div className={`max-w-[85%] sm:max-w-[80%] flex ${message.type === 'user' ? 'flex-row' : 'flex-row-reverse'} items-end overflow-hidden`}>
+                  <div className={`flex-1 min-w-0 ${message.type === 'user' ? 'order-2' : 'order-1'}`}>
+                    <div
+                      className={`px-4 py-3 rounded-2xl ${
+                        message.type === 'user'
+                          ? 'bg-blue-600 text-white ml-4'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white mr-4'
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap">
+                        {message.content}
+                        {message.isStreaming && (
+                          <span className="inline-block w-2 h-5 bg-current ml-1 animate-pulse" />
+                        )}
+                      </p>
+                    </div>
+                    <p className={`text-xs text-gray-500 mt-1 ${
+                      message.type === 'user' ? 'text-right mr-4' : 'text-left ml-4'
+                    }`}>
+                      {message.timestamp.toLocaleTimeString()}
+                    </p>
+                  </div>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    message.type === 'user' 
+                      ? 'bg-blue-600 order-1' 
+                      : 'bg-gray-600 dark:bg-gray-600 order-2'
+                  }`}>
+                    {message.type === 'user' ? (
+                      <span className="text-white font-medium text-sm">U</span>
+                    ) : (
+                      <Bot className="w-5 h-5 text-white" />
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
       </div>
 
       {/* Processing Steps */}
@@ -2503,61 +2548,186 @@ function Counter() {
       )}
 
       {/* Input Area */}
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950">
-        <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
-          <div className="relative flex items-end space-x-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-1.5 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
-            <textarea
-              ref={textareaRef}
-              value={inputValue}
-              onChange={handleTextareaChange}
-              onKeyDown={handleKeyDown}
-              placeholder="Pergunte qualquer coisa..."
-              className="flex-1 bg-transparent border-none focus:ring-0 text-xs py-1.5 px-2 resize-none max-h-32 dark:text-gray-200 placeholder-gray-500"
-              rows={1}
-              disabled={isProcessing}
-            />
-            <div className="flex items-center space-x-1 pb-0.5">
-              <input 
-                type="file" 
-                id="file-upload" 
-                multiple 
-                className="hidden" 
-                onChange={(e) => setAttachedFiles(Array.from(e.target.files || []))}
-              />
-              <input 
-                type="file" 
-                id="folder-upload" 
-                {...({ webkitdirectory: '', directory: '' } as any)}
-                className="hidden" 
-                onChange={(e) => setAttachedFiles(Array.from(e.target.files || []))}
-              />
-              
-              <label 
-                htmlFor="file-upload"
-                className="btn-icon-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer"
-                title={getTranslation(language, 'chat.attach')}
-              >
-                <Paperclip className="w-3.5 h-3.5" />
-              </label>
+      {chatInteractionType === 'chat' && (
+        <div className="p-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-800">
+          <form onSubmit={handleSubmit}>
+            <div className="flex flex-col space-y-3">
+              {/* Mode Switcher */}
+              <div className="flex items-center space-x-2">
+                <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 border border-gray-200 dark:border-gray-700">
+                  <button
+                    type="button"
+                    onClick={() => setWorkspaceMode('standard')}
+                    className={`flex items-center space-x-1.5 px-3 py-1 rounded-md text-[10px] font-bold transition-all duration-300 ${
+                      workspaceMode === 'standard'
+                        ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400'
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    <Layout className="w-3 h-3" />
+                    <span>Standard</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWorkspaceMode('agent')}
+                    className={`flex items-center space-x-1.5 px-3 py-1 rounded-md text-[10px] font-bold transition-all duration-300 ${
+                      workspaceMode === 'agent'
+                        ? 'bg-white dark:bg-gray-700 shadow-sm text-purple-600 dark:text-purple-400'
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    <Cpu className="w-3 h-3" />
+                    <span>Agent</span>
+                  </button>
+                </div>
+                <div className="text-[10px] font-medium text-gray-400 uppercase tracking-widest px-2 border-l border-gray-200 dark:border-gray-800">
+                  {workspaceMode === 'agent' ? 'Modo Autônomo Ativo' : 'Modo Assistente Ativo'}
+                </div>
+              </div>
 
-              <label 
-                htmlFor="folder-upload"
-                className="btn-icon-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer"
-                title={getTranslation(language, 'chat.folder')}
-              >
-                <FolderPlus className="w-3.5 h-3.5" />
-              </label>
-              <button
-                type="submit"
-                disabled={(!inputValue.trim() && attachedFiles.length === 0) || isProcessing}
-                className={`btn-icon-sm bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 transition-all`}
-              >
-                <Send className="w-3.5 h-3.5" />
-              </button>
+              {/* Unified Input Box */}
+              <div className="relative border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 shadow-sm group focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
+                <textarea
+                  ref={textareaRef}
+                  value={inputValue}
+                  onChange={handleTextareaChange}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSubmit(e);
+                    }
+                  }}
+                  placeholder={getTranslation(language, 'chat.placeholder')}
+                  className="w-full bg-transparent px-4 pt-3 pb-12 text-sm focus:outline-none transition-all resize-none min-h-[100px] max-h-64 text-gray-800 dark:text-white"
+                  rows={3}
+                  disabled={isProcessing}
+                />
+                
+                {/* Bottom Action Bar (Integrated) */}
+                <div className="absolute bottom-0 left-0 right-0 px-3 py-2 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700/50">
+                  <div className="flex items-center space-x-1">
+                    {/* AI Model Selector Toggle */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setShowModelSelector(!showModelSelector)}
+                        className={`flex items-center space-x-2 px-2 py-1 rounded-lg transition-all text-xs font-bold ${
+                          models.find(m => m.id === selectedModel)?.bg + ' ' + models.find(m => m.id === selectedModel)?.color
+                        }`}
+                      >
+                        <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                        <span className="uppercase tracking-wider mr-1">{models.find(m => m.id === selectedModel)?.name}</span>
+                      </button>
+
+                      {showModelSelector && (
+                        <div className="absolute bottom-full left-0 mb-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-1 z-50">
+                          {models.map((model) => (
+                            <button
+                              key={model.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedModel(model.id);
+                                setShowModelSelector(false);
+                              }}
+                              className={`flex items-center justify-between w-full px-3 py-2 rounded-lg text-xs transition-colors ${
+                                selectedModel === model.id
+                                  ? `${model.bg} ${model.color} font-bold`
+                                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                              }`}
+                            >
+                              <div className="flex flex-col items-start text-left">
+                                <div className="flex items-center space-x-2">
+                                  <span>{model.name}</span>
+                                  {model.isNative && (
+                                    <span className="text-[7px] font-black bg-amber-500 text-white px-1 rounded uppercase tracking-tighter shadow-sm">GRÁTIS</span>
+                                  )}
+                                </div>
+                                <span className="text-[9px] opacity-60 uppercase">{model.provider}</span>
+                              </div>
+                              {model.isNative && (
+                                <span className="text-[8px] font-bold text-amber-500/80 italic">Nativo</span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="h-4 w-[1px] bg-gray-200 dark:bg-gray-700 mx-1" />
+
+                    <input 
+                      type="file" 
+                      id="file-upload" 
+                      multiple 
+                      className="hidden" 
+                      onChange={(e) => {
+                        if (e.target.files) setAttachedFiles(Array.from(e.target.files));
+                      }}
+                    />
+                    
+                    <label 
+                      htmlFor="file-upload"
+                      className="btn-icon-sm text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                      title="Anexar arquivos"
+                    >
+                      <Paperclip className="w-3.5 h-3.5" />
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowIntegrations(true)}
+                      className="btn-icon-sm text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                      title="Integração GitHub"
+                    >
+                      <Github className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn-icon-sm text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                      title="Entrada por Voz"
+                    >
+                      <Mic className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowTemplatesModal(true)}
+                      className="btn-icon-sm text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                      title="Templates de Prompt"
+                    >
+                      <LayoutGrid className="w-3.5 h-3.5" />
+                    </button>
+
+                    <div className="h-4 w-[1px] bg-gray-200 dark:bg-gray-700 mx-1" />
+
+                    <button
+                      type="button"
+                      onClick={() => setIsPlanningActive(!isPlanningActive)}
+                      className={`flex items-center space-x-1 px-2 h-6 rounded-md transition-all duration-300 border ${
+                        isPlanningActive 
+                          ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-800/30' 
+                          : 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border-amber-200/50 dark:border-amber-800/30'
+                      }`}
+                    >
+                      {isPlanningActive ? <ClipboardList className="w-3 h-3" /> : <Zap className="w-3 h-3" />}
+                      <span className="text-[8px] font-black uppercase tracking-wider">{isPlanningActive ? 'Plano' : 'Auto'}</span>
+                    </button>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={(!inputValue.trim() && attachedFiles.length === 0) || isProcessing}
+                    className="w-10 h-8 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition-all flex items-center justify-center shadow-md hover:scale-105 active:scale-95"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        </form>
-      </div>
+          </form>
+        </div>
+      )}
 
       {/* AI Assistant Modal */}
       <AIAssistant 
@@ -2566,10 +2736,9 @@ function Counter() {
         prompt={inputValue}
         onOptimizedPrompt={(optimized: string) => {
           setInputValue(optimized);
-          // Auto-resize textarea
           if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
-            textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
+            textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 240) + 'px';
           }
         }}
       />
@@ -2580,7 +2749,6 @@ function Counter() {
         onClose={() => setShowDependencyManager(false)}
       />
 
-      {/* Ollama Settings Modal */}
       {/* Templates Modal */}
       <TemplatesModal 
         isOpen={showTemplatesModal}

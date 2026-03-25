@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Search, Filter, Grid3X3, List, Star, Download, Eye, Code, Palette, Database, Globe, Smartphone, Monitor, Zap, Heart, Clock, User, Tag, Play, Copy, ExternalLink, Layers, ShoppingCart, BarChart3, FileText, Camera, Music, TowerControl as GameController2, Briefcase, GraduationCap, Stethoscope, Car, Home, Utensils, ArrowLeft, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Search, Filter, Grid3X3, List, Star, Download, Eye, Code, Palette, Database, Globe, Smartphone, Monitor, Zap, Heart, User, Play, Layers, ShoppingCart, BarChart3, FileText, TowerControl as GameController2, Briefcase, GraduationCap, Stethoscope, Car, Home, Utensils, ArrowLeft, ArrowRight, Plus, Sparkles, Trash2, Save } from 'lucide-react';
 
 interface TemplatesModalProps {
   isOpen: boolean;
@@ -36,6 +36,66 @@ const TemplatesModal: React.FC<TemplatesModalProps> = ({ isOpen, onClose, onTemp
   const [showFilters, setShowFilters] = useState(false);
   const [categoryHistory, setCategoryHistory] = useState<string[]>(['all']);
   const [categoryHistoryIndex, setCategoryHistoryIndex] = useState(0);
+  const [activeView, setActiveView] = useState<'browse' | 'create'>('browse');
+  const [customTemplates, setCustomTemplates] = useState<Template[]>([]);
+  const [newTemplate, setNewTemplate] = useState<Partial<Template>>({
+    name: '',
+    description: '',
+    category: 'custom',
+    type: 'react',
+    difficulty: 'beginner',
+    features: [],
+    tags: [],
+    isFree: true,
+    author: 'Você'
+  });
+
+  useEffect(() => {
+    const saved = localStorage.getItem('maximus_custom_templates');
+    if (saved) {
+      setCustomTemplates(JSON.parse(saved));
+    }
+  }, []);
+
+  const saveCustomTemplate = () => {
+    if (!newTemplate.name || !newTemplate.description) return;
+    
+    const template: Template = {
+      ...newTemplate as Template,
+      id: `custom-${Date.now()}`,
+      downloads: 0,
+      rating: 5.0,
+      lastUpdated: 'Recém criado',
+      isPopular: false,
+      preview: 'https://images.pexels.com/photos/11035481/pexels-photo-11035481.jpeg'
+    };
+
+    const updated = [...customTemplates, template];
+    setCustomTemplates(updated);
+    localStorage.setItem('maximus_custom_templates', JSON.stringify(updated));
+    setActiveView('browse');
+    setSelectedCategory('custom');
+    
+    // Reset form
+    setNewTemplate({
+      name: '',
+      description: '',
+      category: 'custom',
+      type: 'react',
+      difficulty: 'beginner',
+      features: [],
+      tags: [],
+      isFree: true,
+      author: 'Você'
+    });
+  };
+
+  const deleteCustomTemplate = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = customTemplates.filter(t => t.id !== id);
+    setCustomTemplates(updated);
+    localStorage.setItem('maximus_custom_templates', JSON.stringify(updated));
+  };
 
   const navigateToCategory = (categoryId: string) => {
     setSelectedCategory(categoryId);
@@ -65,6 +125,7 @@ const TemplatesModal: React.FC<TemplatesModalProps> = ({ isOpen, onClose, onTemp
 
   const categories = [
     { id: 'all', name: 'Todos', icon: Layers },
+    { id: 'custom', name: 'Meus Templates', icon: Sparkles },
     { id: 'ecommerce', name: 'E-commerce', icon: ShoppingCart },
     { id: 'dashboard', name: 'Dashboard', icon: BarChart3 },
     { id: 'blog', name: 'Blog', icon: FileText },
@@ -80,6 +141,7 @@ const TemplatesModal: React.FC<TemplatesModalProps> = ({ isOpen, onClose, onTemp
     { id: 'realestate', name: 'Imóveis', icon: Home },
     { id: 'food', name: 'Alimentação', icon: Utensils },
     { id: 'entertainment', name: 'Entretenimento', icon: GameController2 },
+    { id: 'mobility', name: 'Mobilidade', icon: Car },
   ];
 
   const templates: Template[] = [
@@ -272,10 +334,228 @@ const TemplatesModal: React.FC<TemplatesModalProps> = ({ isOpen, onClose, onTemp
       features: ['Mapas integrados', 'GPS em tempo real', 'Sistema de pagamentos', 'Chat motorista/passageiro', 'Avaliações', 'Histórico de viagens'],
       demoUrl: 'https://demo.maximus.dev/uber-clone',
       sourceUrl: 'https://github.com/maximusdev/uber-clone-template'
+    },
+    {
+      id: '11',
+      name: 'AI SaaS Multi-tenant Dashboard',
+      description: 'Plataforma SaaS completa com gestão de subscrições, análise preditiva e suporte a múltiplos clientes',
+      category: 'business',
+      type: 'next',
+      difficulty: 'advanced',
+      tags: ['saas', 'ai', 'multi-tenant', 'dashboard'],
+      preview: 'https://images.pexels.com/photos/3183158/pexels-photo-3183158.jpeg',
+      downloads: 4200,
+      rating: 4.9,
+      author: 'MAXIMUS AI Labs',
+      lastUpdated: 'Recém atualizado',
+      isPopular: true,
+      isFree: false,
+      features: ['Autenticação Multi-tenant', 'Motor de IA Preditiva', 'Billing Integrado', 'Analytics Avançado', 'Webhooks'],
+      demoUrl: 'https://demo.maximus.dev/ai-saas'
+    },
+    {
+      id: '12',
+      name: 'Global Digital Asset Marketplace',
+      description: 'Marketplace de ativos digitais com suporte a transações globais e painel de criadores',
+      category: 'ecommerce',
+      type: 'react',
+      difficulty: 'advanced',
+      tags: ['marketplace', 'digital-assets', 'creators', 'payments'],
+      preview: 'https://images.pexels.com/photos/7567443/pexels-photo-7567443.jpeg',
+      downloads: 2800,
+      rating: 4.8,
+      author: 'AssetFlow',
+      lastUpdated: '2 dias atrás',
+      isPopular: false,
+      isFree: false,
+      features: ['Gestão de Inventário Digital', 'Pagamentos Globais', 'Royalty Sharing', 'Verificação de Identidade'],
+      demoUrl: 'https://demo.maximus.dev/asset-marketplace'
+    },
+    {
+      id: '13',
+      name: 'Real-time FinTech Hub',
+      description: 'Hub financeiro com rastreamento de ativos em tempo real, carteiras multi-moeda e gráficos avançados',
+      category: 'dashboard',
+      type: 'react',
+      difficulty: 'advanced',
+      tags: ['fintech', 'real-time', 'charts', 'crypto'],
+      preview: 'https://images.pexels.com/photos/6770610/pexels-photo-6770610.jpeg',
+      downloads: 5100,
+      rating: 4.9,
+      author: 'FinNexus',
+      lastUpdated: '1 dia atrás',
+      isPopular: true,
+      isFree: false,
+      features: ['WebSockets em Tempo Real', 'Gráficos TradingView', 'Gestão de Portfólio', 'Alertas de Preço'],
+      demoUrl: 'https://demo.maximus.dev/fintech-hub'
+    },
+    {
+      id: '14',
+      name: 'HealthTech Telemedicine Portal',
+      description: 'Portal de telemedicina seguro com vídeo consultas, registros de pacientes e agendamento inteligente',
+      category: 'health',
+      type: 'next',
+      difficulty: 'intermediate',
+      tags: ['healthtech', 'telemedicine', 'video', 'appointments'],
+      preview: 'https://images.pexels.com/photos/4021775/pexels-photo-4021775.jpeg',
+      downloads: 3300,
+      rating: 4.8,
+      author: 'MedConnect',
+      lastUpdated: '3 dias atrás',
+      isPopular: false,
+      isFree: true,
+      features: ['Video Conferência Segura', 'Prontuário Eletrônico', 'Agendamento Dinâmico', 'Segurança HIPAA'],
+      demoUrl: 'https://demo.maximus.dev/healthtech'
+    },
+    {
+      id: '15',
+      name: 'Enterprise LMS Suite',
+      description: 'Sistema de gestão de aprendizagem corporativo com construtor de cursos e rastreamento de progresso',
+      category: 'education',
+      type: 'react',
+      difficulty: 'intermediate',
+      tags: ['lms', 'education', 'e-learning', 'corporate'],
+      preview: 'https://images.pexels.com/photos/5905709/pexels-photo-5905709.jpeg',
+      downloads: 6400,
+      rating: 4.7,
+      author: 'EduStream',
+      lastUpdated: '1 semana atrás',
+      isPopular: true,
+      isFree: false,
+      features: ['Construtor de Cursos Drag-n-Drop', 'Fóruns de Discussão', 'Sistema de Certificação', 'Relatórios de Alunos'],
+      demoUrl: 'https://demo.maximus.dev/enterprise-lms'
+    },
+    {
+      id: '16',
+      name: 'AI Logistic & Fleet Network',
+      description: 'Rede de logística inteligente com gestão de frota, rastreamento IA e otimização de rotas',
+      category: 'business',
+      type: 'node',
+      difficulty: 'advanced',
+      tags: ['logistics', 'fleet', 'ai', 'tracking'],
+      preview: 'https://images.pexels.com/photos/906494/pexels-photo-906494.jpeg',
+      downloads: 2100,
+      rating: 4.8,
+      author: 'LogiSoft AI',
+      lastUpdated: '4 dias atrás',
+      isPopular: false,
+      isFree: false,
+      features: ['Otimização de Rotas por IA', 'Monitoramento de Combustível', 'Gestão de Motoristas', 'Telemetria em Direto'],
+      demoUrl: 'https://demo.maximus.dev/logistics-network'
+    },
+    {
+      id: '17',
+      name: 'Smart Real Estate Engine',
+      description: 'Plataforma imobiliária com tours virtuais 360, avaliação IA e funil de vendas integrado',
+      category: 'realestate',
+      type: 'next',
+      difficulty: 'intermediate',
+      tags: ['realestate', '360-tours', 'leads', 'automation'],
+      preview: 'https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg',
+      downloads: 4700,
+      rating: 4.7,
+      author: 'PropTech Pro',
+      lastUpdated: '2 dias atrás',
+      isPopular: true,
+      isFree: true,
+      features: ['Tours Virtuais Imersivos', 'CRM de Imóveis', 'Calculadora Financeira', 'Chatbot de Vendas'],
+      demoUrl: 'https://demo.maximus.dev/smart-real-estate'
+    },
+    {
+      id: '18',
+      name: 'Automated HR & Recruitment Suite',
+      description: 'Suíte de RH com triagem de currículos por IA, agendamento de entrevistas e onboarding',
+      category: 'business',
+      type: 'react',
+      difficulty: 'intermediate',
+      tags: ['hr', 'recruitment', 'ats', 'automation'],
+      preview: 'https://images.pexels.com/photos/4144923/pexels-photo-4144923.jpeg',
+      downloads: 2900,
+      rating: 4.6,
+      author: 'TalentHub',
+      lastUpdated: '5 dias atrás',
+      isPopular: false,
+      isFree: true,
+      features: ['Parsing de Currículos IA', 'Pipeline de Recrutamento', 'Testes de Avaliação', 'Onboarding Digital'],
+      demoUrl: 'https://demo.maximus.dev/hr-recruitment'
+    },
+    {
+      id: '19',
+      name: 'Social Media Content Engine',
+      description: 'Motor de automação de conteúdo social com agendamento multirede e analytics de engajamento',
+      category: 'social',
+      type: 'vue',
+      difficulty: 'intermediate',
+      tags: ['socialmedia', 'marketing', 'automation', 'analytics'],
+      preview: 'https://images.pexels.com/photos/267350/pexels-photo-267350.jpeg',
+      downloads: 8200,
+      rating: 4.8,
+      author: 'ContentFlow',
+      lastUpdated: '1 dia atrás',
+      isPopular: true,
+      isFree: false,
+      features: ['Agendamento Multirede', 'Design Studio Integrado', 'Relatórios de ROI', 'Monitoramento de Menções'],
+      demoUrl: 'https://demo.maximus.dev/social-content'
+    },
+    {
+      id: '20',
+      name: 'Smart Urban Mobility Manager',
+      description: 'Plataforma de gestão de mobilidade urbana com controle de micro-mobilidade e análise de tráfego',
+      category: 'mobility',
+      type: 'react',
+      difficulty: 'advanced',
+      tags: ['urban-mobility', 'smart-city', 'iot', 'tracking'],
+      preview: 'https://images.pexels.com/photos/1118448/pexels-photo-1118448.jpeg',
+      downloads: 3600,
+      rating: 4.9,
+      author: 'CityNexus',
+      lastUpdated: 'Hoje',
+      isPopular: true,
+      isFree: false,
+      features: ['Gestão de Frota IoT', 'Análise de Fluxo Urbano', 'Bilhetagem Digital', 'Integração com Mapas'],
+      demoUrl: 'https://demo.maximus.dev/urban-mobility'
+    },
+    {
+      id: 'social-media-neural',
+      name: 'Social Media Neural',
+      description: 'Template de rede social com feed auto-moderado por IA e chats criptografados.',
+      category: 'social',
+      type: 'react',
+      difficulty: 'advanced',
+      tags: ['social', 'ai', 'encryption', 'neural'],
+      preview: 'https://images.pexels.com/photos/267350/pexels-photo-267350.jpeg',
+      downloads: 4200,
+      rating: 4.9,
+      author: 'MAXIMUS AI Labs',
+      lastUpdated: 'Novo',
+      isPopular: true,
+      isFree: false,
+      features: ['Moderação por IA', 'Mensagens Criptografadas', 'Feed Dinâmico', 'Design Visionário'],
+      demoUrl: 'https://demo.maximus.dev/social-neural'
+    },
+    {
+      id: 'portfolio-3d-creative',
+      name: 'Portfolio 3D Creative',
+      description: 'Portfolio premium com Three.js, animações fluidas e design ultra-fino.',
+      category: 'portfolio',
+      type: 'react',
+      difficulty: 'advanced',
+      tags: ['portfolio', '3d', 'threejs', 'creative'],
+      preview: 'https://images.pexels.com/photos/196644/pexels-photo-196644.jpeg',
+      downloads: 3100,
+      rating: 4.9,
+      author: 'Visual Studio',
+      lastUpdated: 'Novo',
+      isPopular: true,
+      isFree: false,
+      features: ['Integração Three.js', 'Smooth Scroll', 'Dark Mode Nativo', 'Tipografia Moderna'],
+      demoUrl: 'https://demo.maximus.dev/portfolio-3d'
     }
   ];
 
-  const filteredTemplates = templates.filter(template => {
+  const allTemplates = [...customTemplates, ...templates];
+
+  const filteredTemplates = allTemplates.filter(template => {
     const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          template.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          template.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -401,18 +681,37 @@ const TemplatesModal: React.FC<TemplatesModalProps> = ({ isOpen, onClose, onTemp
                   Templates Profissionais
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Acelere seu desenvolvimento com templates prontos
+                  {activeView === 'browse' ? 'Acelere seu desenvolvimento com templates prontos' : 'Crie seu próprio template personalizado'}
                 </p>
               </div>
-              <button
-                onClick={onClose}
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setActiveView(activeView === 'browse' ? 'create' : 'browse')}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                    activeView === 'create'
+                      ? 'bg-gray-100 dark:bg-gray-700 text-gray-600'
+                      : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20'
+                  }`}
+                >
+                  {activeView === 'browse' ? (
+                    <>
+                      <Plus className="w-4 h-4" />
+                      <span>Novo Template</span>
+                    </>
+                  ) : (
+                    <span>Voltar aos Templates</span>
+                  )}
+                </button>
+                <button
+                  onClick={onClose}
                 className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
+          </div>
 
-            {/* Search and Filters */}
+          {/* Search and Filters */}
             <div className="flex items-center space-x-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -545,16 +844,102 @@ const TemplatesModal: React.FC<TemplatesModalProps> = ({ isOpen, onClose, onTemp
             </div>
           </div>
 
-          {/* Templates Grid/List */}
+          {/* Templates Grid/List or Create Form */}
           <div className="flex-1 overflow-y-auto p-6">
-            {filteredTemplates.length > 0 ? (
+            {activeView === 'create' ? (
+              <div className="max-w-2xl mx-auto space-y-6 pb-20 animate-in fade-in slide-in-from-bottom duration-300">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-tighter">Nome do Template</label>
+                    <input
+                      type="text"
+                      placeholder="Ex: App de Gestão Imobiliária"
+                      value={newTemplate.name}
+                      onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
+                      className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-tighter">Descrição Detalhada</label>
+                    <textarea
+                      placeholder="Descreva as funcionalidades e o objetivo deste template..."
+                      value={newTemplate.description}
+                      onChange={(e) => setNewTemplate({ ...newTemplate, description: e.target.value })}
+                      rows={3}
+                      className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-tighter">Tecnologia</label>
+                    <select
+                      value={newTemplate.type}
+                      onChange={(e) => setNewTemplate({ ...newTemplate, type: e.target.value as any })}
+                      className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                    >
+                      <option value="react">React</option>
+                      <option value="next">Next.js</option>
+                      <option value="vue">Vue.js</option>
+                      <option value="html">HTML/CSS</option>
+                      <option value="python">Python/Backend</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-tighter">Dificuldade</label>
+                    <select
+                      value={newTemplate.difficulty}
+                      onChange={(e) => setNewTemplate({ ...newTemplate, difficulty: e.target.value as any })}
+                      className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                    >
+                      <option value="beginner">Iniciante</option>
+                      <option value="intermediate">Intermediário</option>
+                      <option value="advanced">Avançado</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-tighter">Funcionalidades (separadas por vírgula)</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Auth, Dashboard, Stripe"
+                    onChange={(e) => setNewTemplate({ ...newTemplate, features: e.target.value.split(',').map(s => s.trim()) })}
+                    className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                  />
+                </div>
+
+                <div className="pt-6 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                  <div className="flex items-center space-x-2 text-blue-500 font-bold text-xs uppercase tracking-widest animate-pulse">
+                    <Sparkles className="w-4 h-4" />
+                    <span>IA Pronta para Ativar</span>
+                  </div>
+                  <button
+                    onClick={saveCustomTemplate}
+                    disabled={!newTemplate.name || !newTemplate.description}
+                    className="flex items-center space-x-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-blue-500/30 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
+                  >
+                    <Save className="w-5 h-5" />
+                    <span>Criar e Ativar Agora</span>
+                  </button>
+                </div>
+              </div>
+            ) : filteredTemplates.length > 0 ? (
               viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredTemplates.map((template) => (
                     <div
                       key={template.id}
-                      className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden hover:shadow-lg transition-shadow group"
+                      className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden hover:shadow-lg transition-shadow group relative"
                     >
+                      {/* Delete Button for Custom Templates */}
+                      {template.id.startsWith('custom-') && (
+                        <button
+                          onClick={(e) => deleteCustomTemplate(template.id, e)}
+                          className="absolute top-2 right-2 p-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-full z-20 opacity-0 group-hover:opacity-100 transition-all"
+                          title="Excluir Template"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                       {/* Preview Image */}
                       <div className="relative h-48 bg-gray-200 dark:bg-gray-600 overflow-hidden">
                         <img
@@ -691,6 +1076,15 @@ const TemplatesModal: React.FC<TemplatesModalProps> = ({ isOpen, onClose, onTemp
                                   title="Ver Demo"
                                 >
                                   <Eye className="w-4 h-4" />
+                                </button>
+                              )}
+                              {template.id.startsWith('custom-') && (
+                                <button
+                                  onClick={(e) => deleteCustomTemplate(template.id, e)}
+                                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                                  title="Excluir Template"
+                                >
+                                  <Trash2 className="w-4 h-4" />
                                 </button>
                               )}
                               <button

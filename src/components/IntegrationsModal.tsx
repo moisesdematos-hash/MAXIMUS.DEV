@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import { logError } from '../lib/errorLogger';
 import { 
   X, 
   Database, 
@@ -9,23 +11,15 @@ import {
   CheckCircle, 
   AlertCircle,
   ExternalLink,
-  Key,
   Settings,
-  Plus,
   Trash2,
-  Eye,
-  EyeOff,
-  Copy,
   RefreshCw,
   Shield,
   Globe,
-  Code,
-  Webhook,
   Link,
   Activity,
   Star,
   Crown,
-  Sparkles,
   ArrowLeft,
   ArrowRight
 } from 'lucide-react';
@@ -33,6 +27,7 @@ import {
 interface IntegrationsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  projectId?: string;
 }
 
 interface Integration {
@@ -48,11 +43,9 @@ interface Integration {
   color: string;
 }
 
-const IntegrationsModal: React.FC<IntegrationsModalProps> = ({ isOpen, onClose }) => {
+const IntegrationsModal: React.FC<IntegrationsModalProps> = ({ isOpen, onClose, projectId }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isConnecting, setIsConnecting] = useState<string>('');
-  const [showApiKeys, setShowApiKeys] = useState<string>('');
-  const [isAutoConnecting, setIsAutoConnecting] = useState<boolean>(false);
   const [categoryHistory, setCategoryHistory] = useState<string[]>(['all']);
   const [categoryHistoryIndex, setCategoryHistoryIndex] = useState(0);
 
@@ -181,6 +174,43 @@ const IntegrationsModal: React.FC<IntegrationsModalProps> = ({ isOpen, onClose }
     }
   ]);
 
+  useEffect(() => {
+    if (isOpen) {
+      loadIntegrations();
+    }
+  }, [isOpen]);
+
+  const loadIntegrations = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      let query = supabase
+        .from('user_integrations')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (projectId) {
+        query = query.eq('project_id', projectId);
+      } else {
+        query = query.is('project_id', null);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      if (data) {
+        setIntegrations(prev => prev.map(integration => {
+          const saved = data.find(d => d.service_id === integration.id);
+          return saved ? { ...integration, status: saved.status as any } : { ...integration, status: 'disconnected' };
+        }));
+      }
+    } catch (error) {
+      logError({ error_message: 'Falha ao carregar integrações', severity: 'warning' });
+    }
+  };
+
   const categories = [
     { id: 'all', label: 'Todas', icon: Globe },
     { id: 'database', label: 'Database', icon: Database },
@@ -199,58 +229,98 @@ const IntegrationsModal: React.FC<IntegrationsModalProps> = ({ isOpen, onClose }
     
     const integration = integrations.find(i => i.id === integrationId);
     
-    if (mode === 'automatic') {
-      // IA Automatic connection
-      const steps = [
-        `🤖 IA detectando ${integration?.name}...`,
-        '🔍 Analisando credenciais no ambiente...',
-        '🔐 Configurando autenticação automática...',
-        '⚙️ IA aplicando configurações otimizadas...',
-        '⚡ Testando conexão inteligente...',
-        '✅ Conexão automática estabelecida!'
-      ];
-      
-      for (let i = 0; i < steps.length; i++) {
-        console.log(steps[i]);
-        await new Promise(resolve => setTimeout(resolve, 800));
+    try {
+      if (mode === 'automatic') {
+        const steps = [
+          `🤖 IA detectando ${integration?.name}...`,
+          '🔍 Analisando credenciais no ambiente...',
+          '🔐 Configurando autenticação automática...',
+          '⚙️ IA aplicando configurações otimizadas...',
+          '⚡ Testando conexão inteligente...',
+          '✅ Conexão automática estabelecida!'
+        ];
+        
+        for (let i = 0; i < steps.length; i++) {
+          console.log(steps[i]);
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      } else {
+        const steps = [
+          'Verificando credenciais...',
+          'Configurando webhooks...',
+          'Testando conexão...',
+          'Aplicando configurações...',
+          'Conexão estabelecida!'
+        ];
+        
+        for (let i = 0; i < steps.length; i++) {
+          console.log(`${integration?.name}: ${steps[i]}`);
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
       }
-    } else {
-      // Manual connection
-      const steps = [
-        'Verificando credenciais...',
-        'Configurando webhooks...',
-        'Testando conexão...',
-        'Aplicando configurações...',
-        'Conexão estabelecida!'
-      ];
-      
-      for (let i = 0; i < steps.length; i++) {
-        console.log(`${integration?.name}: ${steps[i]}`);
-        await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Save to Supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { error } = await supabase
+          .from('user_integrations')
+          .upsert({
+            user_id: user.id,
+            project_id: projectId || null,
+            service_id: integrationId,
+            status: 'connected',
+            last_updated: new Date().toISOString()
+          }, { onConflict: 'user_id,service_id,project_id' });
+
+        if (error) throw error;
       }
+      
+      setIntegrations(prev => prev.map(integration => 
+        integration.id === integrationId 
+          ? { ...integration, status: 'connected' as const }
+          : integration
+      ));
+      
+      const modeText = mode === 'automatic' ? '🤖 Configuração automática' : '🔧 Configuração manual';
+      console.log(`🎉 ${integration?.name} Conectado via ${modeText}`);
+    } catch (error) {
+      logError({ error_message: `Falha ao conectar ${integrationId}`, severity: 'error' });
+      alert('Houve um erro ao salvar a integração. Verifique sua conexão.');
+    } finally {
+      setIsConnecting('');
     }
-    
-    // Update integration status
-    setIntegrations(prev => prev.map(integration => 
-      integration.id === integrationId 
-        ? { ...integration, status: 'connected' as const }
-        : integration
-    ));
-    
-    setIsConnecting('');
-    
-    // Show success message
-    const modeText = mode === 'automatic' ? '🤖 Configuração automática' : '🔧 Configuração manual';
-    alert(`🎉 ${integration?.name} Conectado!\n\n✅ ${modeText} concluída\n🔧 Todas as funcionalidades ativas\n⚡ Pronto para usar!`);
   };
 
-  const handleDisconnect = (integrationId: string) => {
-    if (confirm('Tem certeza que deseja desconectar esta integração?')) {
+  const handleDisconnect = async (integrationId: string) => {
+    if (!confirm('Tem certeza que deseja desconectar esta integração?')) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        let query = supabase
+          .from('user_integrations')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('service_id', integrationId);
+
+        if (projectId) {
+          query = query.eq('project_id', projectId);
+        } else {
+          query = query.is('project_id', null);
+        }
+
+        const { error } = await query;
+
+        if (error) throw error;
+      }
+
       setIntegrations(prev => prev.map(integration => 
         integration.id === integrationId 
           ? { ...integration, status: 'disconnected' as const }
           : integration
       ));
+    } catch (error) {
+      logError({ error_message: `Falha ao desconectar ${integrationId}`, severity: 'error' });
     }
   };
 
@@ -294,11 +364,7 @@ const IntegrationsModal: React.FC<IntegrationsModalProps> = ({ isOpen, onClose }
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
-                {isAutoConnecting ? (
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <Link className="w-5 h-5 text-white" />
-                )}
+                <Link className="w-5 h-5 text-white" />
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-gray-800 dark:text-white">

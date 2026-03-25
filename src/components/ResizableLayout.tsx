@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { GripVertical, GripHorizontal, Maximize2, Minimize2 } from 'lucide-react';
+import { GripVertical, GripHorizontal, Maximize2 } from 'lucide-react';
 
 interface ResizableLayoutProps {
   children: React.ReactNode[];
@@ -8,7 +8,7 @@ interface ResizableLayoutProps {
 
 const ResizableLayout: React.FC<ResizableLayoutProps> = ({ children, className = '' }) => {
   const [sidebarWidth, setSidebarWidth] = useState(320); // Largura inicial da sidebar
-  const [chatWidth, setChatWidth] = useState(50); // Porcentagem do espaço restante
+  const [chatWidth, setChatWidth] = useState(75); // Largura inicial do chat (75%)
   const [isResizing, setIsResizing] = useState<'sidebar' | 'chat' | null>(null);
   const [isVerticalLayout, setIsVerticalLayout] = useState(false);
   const [chatHeight, setChatHeight] = useState(50); // Para layout vertical

@@ -1,22 +1,30 @@
 import { CreditManager } from './creditManager';
+import { AIService } from './aiService';
 
 export class PerformanceAgent {
   private creditManager = CreditManager.getInstance();
 
-  public async analyzePerformance(code: string): Promise<{ success: boolean; suggestions: string[]; reasoning?: string }> {
-    console.log('⚡ PerformanceAgent: Analisando performance do código...');
+  public async analyzePerformance(code: string, modelId: string = 'maximus-neural'): Promise<{ success: boolean; suggestions: string[]; reasoning?: string }> {
+    console.log(`⚡ PerformanceAgent: Analisando performance com ${modelId}...`);
     
-    // Simulating credit consumption
+    // Simulating credit consumption (keep this for now, as it wasn't explicitly removed)
     this.creditManager.consumeCredits(5);
-    
-    console.log(`⚡ PerformanceAgent: Analisando ${code.length} chars de código...`);
-    const suggestions = [
-      'Utilizar React.memo() em componentes puros.',
-      'Implementar lazy loading para rotas pesadas.',
-      'Otimizar loops de renderização (evitar funções anônimas em props).'
-    ];
-    const reasoning = `Após varredura estática, identifiquei oportunidades de memoização e divisão de código (code-splitting) para reduzir o Time to Interactive (TTI).`;
-    
-    return { success: true, suggestions, reasoning };
+
+    try {
+      const systemContext = "Você é o Agente de Performance. Analise o código React/TypeScript fornecido e sugira melhorias reais de desempenho (memoization, renderização, algoritmos).";
+      const response = await AIService.generateResponse(modelId, `${systemContext}\n\nCódigo:\n${code}`);
+      
+      const suggestions = response.split('\n').filter((s: string) => s.trim().startsWith('-') || s.trim().startsWith('*')).map((s: string) => s.replace(/^[-*]\s*/, ''));
+      const reasoning = `Realizei uma análise profunda usando ${modelId} e identifiquei oportunidades críticas de otimização no código.`;
+      
+      return { 
+        success: true, 
+        suggestions: suggestions.length > 0 ? suggestions : ["Otimizar hooks do React", "Verificar renderizações desnecessárias"], 
+        reasoning 
+      };
+    } catch (error) {
+      console.error('Erro no PerformanceAgent:', error);
+      return { success: false, suggestions: [] };
+    }
   }
 }

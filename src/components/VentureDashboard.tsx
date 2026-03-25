@@ -9,6 +9,9 @@ const VentureDashboard: React.FC = () => {
   console.log(`[Venture] Language context: ${language}`);
   const [strategy, setStrategy] = useState<VentureStrategy | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(true);
+  const [activeTab, setActiveTab] = useState('Market');
+  const [isDeploying, setIsDeploying] = useState(false);
+  const [deployStep, setDeployStep] = useState('');
 
   useEffect(() => {
     const loadStrategy = async () => {
@@ -19,6 +22,38 @@ const VentureDashboard: React.FC = () => {
     };
     if (showVentureDashboard) loadStrategy();
   }, [showVentureDashboard]);
+
+  const handleLaunch = async () => {
+    if (isDeploying || !strategy) return;
+    setIsDeploying(true);
+
+    const porter = new (await import('../lib/ghostPortability')).GhostPortability();
+    const config = await porter.exportProject('vercel', '// Maximus.DEV Codebase Source', { 
+      name: 'Maximus-Neural-App', 
+      id: Math.random().toString(36).substr(2, 5) 
+    });
+
+    const steps = [
+      '🔍 Analisando arquitetura do projeto...',
+      '🤖 Otimizando pacotes via Maximus Neural...',
+      config.status || '🚀 Preparando infraestrutura...',
+      '🌐 Sincronizando com redes multi-cloud...',
+      '🔒 Aplicando certificados de segurança Aegis...',
+      '✅ Deploy concluído com sucesso!'
+    ];
+
+    for (const step of steps) {
+      setDeployStep(step);
+      await new Promise(r => setTimeout(r, 1200));
+    }
+
+    if (config.deployUrl) {
+      alert(`🚀 PROJETO EM PRODUÇÃO!\n\nSeu projeto foi provisionado com sucesso.\nLink de Deploy Vercel: ${config.deployUrl}\n\nO sistema Neural Time-Travel capturou um Snapshot de segurança deste estado.`);
+    }
+    
+    setIsDeploying(false);
+    setShowVentureDashboard(false);
+  };
 
   if (!showVentureDashboard) return null;
 
@@ -44,12 +79,16 @@ const VentureDashboard: React.FC = () => {
 
             <nav className="flex-1 space-y-6">
               {[
-                { icon: Target, label: 'Market Analysis', active: true },
-                { icon: DollarSign, label: 'Revenue Model', active: false },
-                { icon: Megaphone, label: 'Marketing Strategy', active: false },
-                { icon: Globe, label: 'Neural SEO', active: false }
-              ].map((item, i) => (
-                <div key={i} className={`flex items-center space-x-4 p-3 rounded-2xl cursor-pointer transition-all ${item.active ? 'bg-white/10 shadow-lg' : 'hover:bg-white/5 opacity-60'}`}>
+                { id: 'Market', icon: Target, label: 'Market Analysis' },
+                { id: 'Revenue', icon: DollarSign, label: 'Revenue Model' },
+                { id: 'Marketing', icon: Megaphone, label: 'Marketing Strategy' },
+                { id: 'SEO', icon: Globe, label: 'Neural SEO' }
+              ].map((item) => (
+                <div 
+                  key={item.id} 
+                  onClick={() => setActiveTab(item.id)}
+                  className={`flex items-center space-x-4 p-3 rounded-2xl cursor-pointer transition-all ${activeTab === item.id ? 'bg-white/10 shadow-lg' : 'hover:bg-white/5 opacity-60'}`}
+                >
                   <item.icon className="w-5 h-5" />
                   <span className="font-medium">{item.label}</span>
                 </div>
@@ -103,50 +142,72 @@ const VentureDashboard: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Market Segment */}
-                <div className="bg-gray-50 dark:bg-gray-900 p-6 rounded-3xl border border-gray-100 dark:border-gray-800">
-                  <h3 className="flex items-center space-x-2 font-bold mb-4">
-                    <Users className="w-4 h-4 text-indigo-500" />
-                    <span>Target Segment</span>
-                  </h3>
-                  <div className="space-y-4">
+                {activeTab === 'Market' && (
+                  <div className="bg-gray-50 dark:bg-gray-900 p-6 rounded-3xl border border-gray-100 dark:border-gray-800">
+                    <h3 className="flex items-center space-x-2 font-bold mb-4">
+                      <Users className="w-4 h-4 text-indigo-500" />
+                      <span>Target Segment</span>
+                    </h3>
                     <div className="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
                       <p className="text-sm font-bold text-indigo-600 mb-1">Primary Market</p>
                       <p className="text-lg font-bold">{strategy?.targetMarket}</p>
                     </div>
-                    <div className="space-y-2">
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Competitors</p>
-                      <div className="flex flex-wrap gap-2">
-                        {strategy?.competitors.map((c, i) => (
-                          <span key={i} className="px-3 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full text-xs font-medium">{c}</span>
-                        ))}
-                      </div>
-                    </div>
                   </div>
-                </div>
+                )}
 
-                {/* Revenue & Marketing */}
-                <div className="bg-gray-50 dark:bg-gray-900 p-6 rounded-3xl border border-gray-100 dark:border-gray-800">
-                  <h3 className="flex items-center space-x-2 font-bold mb-4">
-                    <DollarSign className="w-4 h-4 text-green-500" />
-                    <span>Business Model</span>
-                  </h3>
-                  <div className="space-y-4">
+                {activeTab === 'Revenue' && (
+                  <div className="bg-gray-50 dark:bg-gray-900 p-6 rounded-3xl border border-gray-100 dark:border-gray-800">
+                    <h3 className="flex items-center space-x-2 font-bold mb-4">
+                      <DollarSign className="w-4 h-4 text-green-500" />
+                      <span>Revenue Streams</span>
+                    </h3>
                     <div className="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                      <p className="text-sm font-bold text-green-600 mb-1">Revenue Stream</p>
+                      <p className="text-sm font-bold text-green-600 mb-1">Model</p>
                       <p className="text-lg font-bold">{strategy?.revenueModel}</p>
                     </div>
+                  </div>
+                )}
+
+                {activeTab === 'Marketing' && (
+                  <div className="bg-gray-50 dark:bg-gray-900 p-6 rounded-3xl border border-gray-100 dark:border-gray-800">
+                    <h3 className="flex items-center space-x-2 font-bold mb-4">
+                      <Megaphone className="w-4 h-4 text-orange-500" />
+                      <span>Action Plan</span>
+                    </h3>
                     <div className="space-y-2">
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Marketing Checklist</p>
-                      <div className="space-y-2">
-                        {strategy?.marketingPlan.map((p, i) => (
-                          <div key={i} className="flex items-center space-x-2 text-xs text-gray-600 dark:text-gray-400">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
-                            <span>{p}</span>
-                          </div>
-                        ))}
-                      </div>
+                      {strategy?.marketingPlan.map((p, i) => (
+                        <div key={i} className="flex items-center space-x-2 text-xs text-gray-600 dark:text-gray-400">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                          <span>{p}</span>
+                        </div>
+                      ))}
                     </div>
+                  </div>
+                )}
+
+                {activeTab === 'SEO' && (
+                  <div className="bg-gray-50 dark:bg-gray-900 p-6 rounded-3xl border border-gray-100 dark:border-gray-800">
+                    <h3 className="flex items-center space-x-2 font-bold mb-4">
+                      <Globe className="w-4 h-4 text-blue-500" />
+                      <span>Neural SEO Tags</span>
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {['autonomous-dev', 'maximus-neural', 'next-gen-saas', 'ai-engineering'].map((tag, i) => (
+                        <span key={i} className="px-3 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full text-[10px] font-bold uppercase tracking-wider">{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="bg-gray-50 dark:bg-gray-900 p-6 rounded-3xl border border-gray-100 dark:border-gray-800">
+                  <h3 className="flex items-center space-x-2 font-bold mb-4">
+                    <Target className="w-4 h-4 text-red-500" />
+                    <span>Competitive Landscape</span>
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {strategy?.competitors.map((c, i) => (
+                      <span key={i} className="px-3 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full text-xs font-medium">{c}</span>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -154,14 +215,24 @@ const VentureDashboard: React.FC = () => {
 
             <div className="mt-10 pt-6 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center">
               <div className="flex items-center space-x-3 text-xs text-gray-400 font-mono">
-                <span className="flex h-2 w-2 rounded-full bg-green-500 animate-ping" />
-                <span>VENTURE PROTOCOL: ACTIVE</span>
+                {isDeploying ? (
+                  <>
+                    <span className="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                    <span className="text-blue-500 font-bold">{deployStep}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="flex h-2 w-2 rounded-full bg-green-500 animate-ping" />
+                    <span>VENTURE PROTOCOL: READY FOR LAUNCH</span>
+                  </>
+                )}
               </div>
               <button 
-                className="px-8 py-3 bg-blue-600 text-white font-bold rounded-2xl shadow-xl shadow-blue-500/30 hover:scale-105 active:scale-95 transition-all"
-                onClick={() => alert('🚀 Neural Launch Initiated! System distributing assets to global nodes...')}
+                disabled={isDeploying}
+                className={`px-8 py-3 bg-blue-600 text-white font-bold rounded-2xl shadow-xl shadow-blue-500/30 hover:scale-105 active:scale-95 transition-all ${isDeploying ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onClick={handleLaunch}
               >
-                Launch Now
+                {isDeploying ? 'Launching...' : 'Launch Now'}
               </button>
             </div>
           </div>

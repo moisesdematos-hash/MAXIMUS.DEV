@@ -56,6 +56,8 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { useTabNavigation } from '../hooks/useTabNavigation';
+import { useUI } from '../contexts/UIContext';
+import SubscriptionView from './SubscriptionView';
 
 interface PaymentsModalProps {
   isOpen: boolean;
@@ -90,6 +92,8 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ isOpen, onClose }) => {
   const [showApiKeys, setShowApiKeys] = useState(false);
   const [isAutoOptimizing, setIsAutoOptimizing] = useState(false);
   const [showWebhookModal, setShowWebhookModal] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
   const { 
     activeTab, 
     tabHistoryIndex, 
@@ -100,6 +104,9 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ isOpen, onClose }) => {
     canGoBack, 
     canGoForward 
   } = useTabNavigation('overview');
+
+  const { credits, setCredits } = useUI();
+  const [isPurchasing, setIsPurchasing] = useState<string | null>(null);
 
   const [paymentMethods] = useState<PaymentMethod[]>([
     {
@@ -255,6 +262,38 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ isOpen, onClose }) => {
     alert('🤖 Otimização IA Concluída!\n\n📈 Conversão: +23% melhoria\n💰 Taxas: -15% redução\n⚡ Checkout: 40% mais rápido\n🛡️ Fraude: -85% detecção\n🎯 ROI: +156% aumento\n\n🏆 Pagamentos otimizados pela IA!');
   };
 
+  const handleSync = async () => {
+    if (isSyncing) return;
+    setIsSyncing(true);
+    
+    console.log('🔄 Sincronizando com Stripe...');
+    
+    // Simulate real-time sync
+    const syncSteps = [
+      '📡 Estabelecendo conexão segura...',
+      '📥 Recuperando últimas transações...',
+      '💳 Validando saldos de créditos...',
+      '🔄 Atualizando histórico de pagamentos...',
+      '✅ Sincronização completa!'
+    ];
+    
+    for (const step of syncSteps) {
+      console.log(step);
+      await new Promise(resolve => setTimeout(resolve, 600));
+    }
+
+    // Update local state (simulated)
+    setLastSyncTime(new Date().toLocaleTimeString());
+    setIsSyncing(false);
+    
+    // Random bonus if lucky
+    if (Math.random() > 0.7) {
+      const bonus = 500;
+      setCredits(prev => prev + bonus);
+      console.log(`🎁 Sincronização premiada! +${bonus} créditos sincronizados.`);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return 'text-green-600 bg-green-50 dark:bg-green-900 dark:text-green-300';
@@ -355,6 +394,8 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ isOpen, onClose }) => {
 
             {[
               { id: 'overview', label: 'Visão Geral', icon: BarChart3 },
+              { id: 'plans', label: 'Planos', icon: Crown },
+              { id: 'credits', label: 'Comprar Créditos', icon: Wallet },
               { id: 'methods', label: 'Métodos', icon: CreditCard },
               { id: 'transactions', label: 'Transações', icon: Receipt },
               { id: 'analytics', label: 'Analytics', icon: PieChart },
@@ -432,6 +473,31 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ isOpen, onClose }) => {
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Sync Action */}
+              <div className="flex items-center justify-between mb-8 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center space-x-3">
+                  <div className={`p-2 rounded-lg ${isSyncing ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                    <RefreshCw className={`w-5 h-5 ${isSyncing ? 'text-blue-600 dark:text-blue-400 animate-spin' : 'text-gray-500'}`} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-800 dark:text-white uppercase tracking-tight">Sincronização de Dados</h4>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {lastSyncTime 
+                        ? `Última atualização: ${lastSyncTime}` 
+                        : 'Dados não sincronizados nesta sessão'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleSync}
+                  disabled={isSyncing}
+                  className="flex items-center space-x-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg text-sm font-bold transition-all disabled:opacity-50 group"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
+                  <span>{isSyncing ? 'Sincronizando...' : 'Sincronizar Agora'}</span>
+                </button>
               </div>
 
               {/* Stats Cards */}
@@ -524,6 +590,12 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ isOpen, onClose }) => {
             </div>
           )}
 
+          {activeTab === 'plans' && (
+            <div className="h-full overflow-hidden">
+              <SubscriptionView />
+            </div>
+          )}
+
           {activeTab === 'methods' && (
             <div className="p-6 h-full overflow-y-auto">
               <div className="mb-6">
@@ -571,8 +643,10 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ isOpen, onClose }) => {
                       </div>
                       
                       <div className="mt-4 flex space-x-2">
-                        <button className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors">
+                        <button 
                           onClick={() => alert('⚙️ Configurando Método!\n\n🔧 Painel de configuração\n💳 Credenciais seguras\n✅ Testes automáticos')}
+                          className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+                        >
                           Configurar
                         </button>
                         <button className="px-3 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors">
@@ -630,12 +704,16 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ isOpen, onClose }) => {
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex space-x-2">
-                              <button className="p-1 text-gray-500 hover:text-blue-600 rounded transition-colors">
+                              <button 
                                 onClick={() => alert('👁️ Visualizando Transação!\n\n📊 Detalhes completos\n💳 Método de pagamento\n📋 Histórico de status')}
+                                className="p-1 text-gray-500 hover:text-blue-600 rounded transition-colors"
+                              >
                                 <Eye className="w-4 h-4" />
                               </button>
-                              <button className="p-1 text-gray-500 hover:text-green-600 rounded transition-colors">
+                              <button 
                                 onClick={() => alert('📥 Download da Transação!\n\n📄 Recibo em PDF\n💾 Dados exportados\n📊 Relatório detalhado')}
+                                className="p-1 text-gray-500 hover:text-green-600 rounded transition-colors"
+                              >
                                 <Download className="w-4 h-4" />
                               </button>
                             </div>
@@ -702,6 +780,109 @@ const PaymentsModal: React.FC<PaymentsModalProps> = ({ isOpen, onClose }) => {
                       <span className="text-gray-600 dark:text-gray-300">Tempo Checkout:</span>
                       <span className="font-medium text-purple-600">2.3s</span>
                     </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'credits' && (
+            <div className="p-6 h-full overflow-y-auto">
+              <div className="max-w-4xl mx-auto">
+                <div className="text-center mb-8">
+                  <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+                    Recarregue seus Créditos IA
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Escolha o pacote que melhor atende às suas necessidades de escala.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {[
+                    { id: 'starter', name: 'Starter', price: 29, credits: 5000, popular: false, color: 'blue' },
+                    { id: 'pro', name: 'Pro Agent', price: 99, credits: 25000, popular: true, color: 'purple' },
+                    { id: 'enterprise', name: 'Enterprise', price: 299, credits: 100000, popular: false, color: 'orange' }
+                  ].map((pack) => (
+                    <div 
+                      key={pack.id}
+                      className={`relative p-6 rounded-2xl border-2 transition-all duration-300 ${
+                        pack.popular 
+                          ? 'border-purple-500 shadow-xl shadow-purple-500/10 bg-purple-50/10 dark:bg-purple-900/10 scale-105 z-10' 
+                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                      }`}
+                    >
+                      {pack.popular && (
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
+                          Mais Popular
+                        </div>
+                      )}
+                      
+                      <div className="mb-4">
+                        <h4 className="text-lg font-bold text-gray-800 dark:text-white uppercase tracking-wider">{pack.name}</h4>
+                        <div className="flex items-baseline space-x-1 mt-2">
+                          <span className="text-3xl font-black text-gray-800 dark:text-white">${pack.price}</span>
+                          <span className="text-gray-500 text-sm">/pack</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3 mb-6">
+                        <div className="flex items-center space-x-2 text-sm text-gray-700 dark:text-gray-300">
+                          <Zap className="w-4 h-4 text-amber-500" />
+                          <span className="font-bold">{pack.credits.toLocaleString()} Créditos IA</span>
+                        </div>
+                        <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                          <span>Prioridade de Processamento</span>
+                        </div>
+                        <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                          <span>Suporte 24/7 Especializado</span>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={async () => {
+                          setIsPurchasing(pack.id);
+                          // Simulate Stripe Checkout
+                          await new Promise(r => setTimeout(r, 2000));
+                          setCredits((prev: number) => prev + pack.credits);
+                          setIsPurchasing(null);
+                          alert(`🎉 Sucesso!\n\nVocê adquiriu o pacote ${pack.name}.\n+${pack.credits.toLocaleString()} créditos adicionados ao seu saldo.`);
+                        }}
+                        disabled={isPurchasing !== null}
+                        className={`w-full py-3 rounded-xl font-bold transition-all duration-300 ${
+                          pack.popular
+                            ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/20'
+                            : 'bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 hover:opacity-90'
+                        } disabled:opacity-50`}
+                      >
+                        {isPurchasing === pack.id ? (
+                          <div className="flex items-center justify-center space-x-2">
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                            <span>Processando...</span>
+                          </div>
+                        ) : (
+                          'Adquirir Agora'
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-12 p-6 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-200 dark:border-gray-800 flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center">
+                      <Shield className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div>
+                      <h5 className="font-bold text-gray-800 dark:text-white">Pagamento Seguro via Stripe</h5>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Todas as transações são criptografadas e processadas de forma segura.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-4 opacity-50 grayscale hover:grayscale-0 transition-all">
+                    <CreditCard className="w-8 h-8" />
+                    <Landmark className="w-8 h-8" />
                   </div>
                 </div>
               </div>

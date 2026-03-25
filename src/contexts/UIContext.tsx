@@ -16,12 +16,16 @@ interface UIContextType {
   setShowPaymentsModal: (show: boolean) => void;
   showIntegrations: boolean;
   setShowIntegrations: (show: boolean) => void;
+  showSearchModal: boolean;
+  setShowSearchModal: (show: boolean) => void;
   showNotifications: boolean;
   setShowNotifications: (show: boolean) => void;
   showHelpCenter: boolean;
   setShowHelpCenter: (show: boolean) => void;
   showShareModal: boolean;
   setShowShareModal: (show: boolean) => void;
+  showCommunity: boolean;
+  setShowCommunity: (show: boolean) => void;
   showMonitoringDashboard: boolean;
   setShowMonitoringDashboard: (show: boolean) => void;
   showAgentReasoning: boolean;
@@ -52,6 +56,16 @@ interface UIContextType {
   setShowTimeTravel: (show: boolean) => void;
   showVentureDashboard: boolean;
   setShowVentureDashboard: (show: boolean) => void;
+  workspaceMode: 'standard' | 'agent';
+  setWorkspaceMode: (mode: 'standard' | 'agent') => void;
+  credits: number;
+  setCredits: React.Dispatch<React.SetStateAction<number>>;
+  isPlanningActive: boolean;
+  setIsPlanningActive: React.Dispatch<React.SetStateAction<boolean>>;
+  chatInteractionType: 'chat' | 'create' | 'claw' | 'subscription' | 'history';
+  setChatInteractionType: (type: 'chat' | 'create' | 'claw' | 'subscription' | 'history') => void;
+  openClawStatus: 'offline' | 'online' | 'busy';
+  setOpenClawStatus: (status: 'offline' | 'online' | 'busy') => void;
 }
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
@@ -72,9 +86,11 @@ export const UIProvider = ({ children }: { children: ReactNode }) => {
   const [showDatabaseModal, setShowDatabaseModal] = useState(false);
   const [showPaymentsModal, setShowPaymentsModal] = useState(false);
   const [showIntegrations, setShowIntegrations] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showHelpCenter, setShowHelpCenter] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showCommunity, setShowCommunity] = useState(false);
   const [showMonitoringDashboard, setShowMonitoringDashboard] = useState(false);
   const [showAgentReasoning, setShowAgentReasoning] = useState(false);
   const [agentName, setAgentName] = useState('Orchestrator');
@@ -90,6 +106,11 @@ export const UIProvider = ({ children }: { children: ReactNode }) => {
   const [showDesignPilot, setShowDesignPilot] = useState(false);
   const [showTimeTravel, setShowTimeTravel] = useState(false);
   const [showVentureDashboard, setShowVentureDashboard] = useState(false);
+  const [workspaceMode, setWorkspaceMode] = useState<'standard' | 'agent'>('standard');
+  const [chatInteractionType, setChatInteractionType] = useState<'chat' | 'create' | 'claw' | 'subscription' | 'history'>('chat');
+  const [credits, setCredits] = useState(1500);
+  const [isPlanningActive, setIsPlanningActive] = useState(true);
+  const [openClawStatus, setOpenClawStatus] = useState<'offline' | 'online' | 'busy'>('offline');
 
   const value = {
     showAIAssistant,
@@ -106,12 +127,16 @@ export const UIProvider = ({ children }: { children: ReactNode }) => {
     setShowPaymentsModal,
     showIntegrations,
     setShowIntegrations,
+    showSearchModal,
+    setShowSearchModal,
     showNotifications,
     setShowNotifications,
     showHelpCenter,
     setShowHelpCenter,
     showShareModal,
     setShowShareModal,
+    showCommunity,
+    setShowCommunity,
     showMonitoringDashboard,
     setShowMonitoringDashboard,
     showAgentReasoning,
@@ -142,6 +167,16 @@ export const UIProvider = ({ children }: { children: ReactNode }) => {
     setShowTimeTravel,
     showVentureDashboard,
     setShowVentureDashboard,
+    workspaceMode,
+    setWorkspaceMode,
+    credits,
+    setCredits,
+    isPlanningActive,
+    setIsPlanningActive,
+    chatInteractionType,
+    setChatInteractionType,
+    openClawStatus,
+    setOpenClawStatus,
   };
 
   return <UIContext.Provider value={value}>{children}</UIContext.Provider>;

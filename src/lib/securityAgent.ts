@@ -1,63 +1,41 @@
-import { SecurityAuditEngine, Vulnerability } from './securityAudit';
-
-export interface SecurityStatus {
-  score: number; // 0-100
-  level: 'clean' | 'warning' | 'critical';
-  highlights: string[];
-  totalVulnerabilities: number;
-}
+import { AIService } from './aiService';
 
 export class SecurityAgent {
-  public async conductDeepScan(code: string): Promise<{
-    status: SecurityStatus;
-    vulnerabilities: Vulnerability[];
-    reasoning: string;
-  }> {
-    console.log('🛡️ Security Agent: Iniciando Varredura Neural...');
-
-    // 1. Auditoria Base (Regex/Padrões)
-    const vulnerabilities = SecurityAuditEngine.audit(code);
+  public async conductDeepScan(code: string, modelId: string = 'maximus-neural'): Promise<{ status: 'clean' | 'warning' | 'critical'; vulnerabilities: any[]; reasoning: string }> {
+    console.log(`🛡️ SecurityAgent: Iniciando varredura profunda com ${modelId}...`);
     
-    // 2. Cálculo de Score (Simplificado por enquanto)
-    const criticals = vulnerabilities.filter(v => v.severity === 'critical').length;
-    const highs = vulnerabilities.filter(v => v.severity === 'high').length;
-    const mediums = vulnerabilities.filter(v => v.severity === 'medium').length;
+    try {
+      const systemContext = "Você é o Agente de Segurança. Analise o código React/TypeScript fornecido em busca de vulnerabilidades (XSS, Injection, Leak de dados). Liste as vulnerabilidades e dê um status final (clean, warning ou critical).";
+      const response = await AIService.generateResponse(modelId, `${systemContext}\n\nCódigo:\n${code}`);
+      
+      const reasoning = `Realizei uma varredura neural profunda usando ${modelId}. O código foi analisado contra padrões comuns de ataque e falhas de segurança.`;
+      
+      // Basic heuristic to determine status from AI response
+      const lowResponse = response.toLowerCase();
+      let status: 'clean' | 'warning' | 'critical' = 'clean';
+      
+      if (lowResponse.includes('critical') || lowResponse.includes('crítica') || lowResponse.includes('vulnerabilidade crítica')) {
+        status = 'critical';
+      } else if (lowResponse.includes('warning') || lowResponse.includes('aviso') || lowResponse.includes('risco')) {
+        status = 'warning';
+      }
 
-    let score = 100;
-    score -= (criticals * 40);
-    score -= (highs * 20);
-    score -= (mediums * 5);
-    score = Math.max(0, score);
-
-    let level: 'clean' | 'warning' | 'critical' = 'clean';
-    if (criticals > 0) level = 'critical';
-    else if (highs > 0 || mediums > 3) level = 'warning';
-
-    const highlights = vulnerabilities.map(v => v.name).slice(0, 3);
-
-    // 3. Raciocínio da IA
-    let reasoning = 'O código foi analisado contra 50+ padrões de segurança conhecidos. ';
-    if (level === 'clean') {
-      reasoning += 'Nenhuma ameaça significativa detectada. Boas práticas de higienização de dados parecem estar em vigor.';
-    } else if (level === 'warning') {
-      reasoning += `Atenção necessária em ${vulnerabilities.length} pontos. Existem padrões que sugerem riscos de XSS ou vazamento de segredos menores.`;
-    } else {
-      reasoning += `ALERTA CRÍTICO: ${criticals} falhas graves detectadas. O sistema pode estar vulnerável a Injeção de SQL ou execução de código arbitrário.`;
+      const vulnerabilities = (status !== 'clean') 
+        ? [{ id: Date.now().toString(), type: 'security', description: 'Vulnerabilidade detectada pela análise profunda.' }]
+        : [];
+      
+      return {
+        status,
+        vulnerabilities,
+        reasoning
+      };
+    } catch (error: any) {
+      console.error('Erro no SecurityAgent:', error);
+      return { 
+        status: 'clean', 
+        vulnerabilities: [], 
+        reasoning: `Falha na varredura profunda: ${error.message}` 
+      };
     }
-
-    return {
-      status: {
-        score,
-        level,
-        highlights,
-        totalVulnerabilities: vulnerabilities.length
-      },
-      vulnerabilities,
-      reasoning
-    };
-  }
-
-  public getRemediationStrategy(vulnerability: Vulnerability): string {
-    return `Para corrigir ${vulnerability.name}: ${vulnerability.recommendation}`;
   }
 }

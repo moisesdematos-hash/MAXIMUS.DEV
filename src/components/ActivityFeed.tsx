@@ -2,13 +2,21 @@ import React from 'react';
 import { useUI } from '../contexts/UIContext';
 import { Clock, Zap, MessageSquare } from 'lucide-react';
 
-const ActivityFeed: React.FC = () => {
+interface ActivityFeedProps {
+  isEmbedded?: boolean;
+}
+
+const ActivityFeed: React.FC<ActivityFeedProps> = ({ isEmbedded }) => {
   const { activities, language } = useUI();
 
-  if (activities.length === 0) return null;
+  if (activities.length === 0 && !isEmbedded) return null;
+
+  const containerClasses = isEmbedded
+    ? "h-full flex flex-col bg-white dark:bg-gray-950"
+    : "fixed bottom-24 right-8 w-72 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-right duration-500 z-40";
 
   return (
-    <div className="fixed bottom-24 right-8 w-72 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-right duration-500 z-40">
+    <div className={containerClasses}>
       <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/50">
         <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 flex items-center">
           <Clock className="w-3 h-3 mr-2" />

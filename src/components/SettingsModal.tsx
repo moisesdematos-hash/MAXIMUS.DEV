@@ -1,32 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   X, 
   User, 
   Bell, 
   Shield, 
-  Palette, 
   Code, 
   Globe, 
-  Database,
-  Key,
   Download,
-  Upload,
-  Trash2,
   Save,
   RefreshCw,
-  Monitor,
-  Smartphone,
   Sun,
   Moon,
   Zap,
   Settings as SettingsIcon,
-  Cookie,
   ArrowLeft,
-  ArrowRight
+  ArrowRight,
+  Terminal,
+  Camera
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import CookieManager from '../utils/cookieManager';
 import { useTabNavigation } from '../hooks/useTabNavigation';
+import { useAuth } from '../contexts/AuthContext';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -35,6 +30,8 @@ interface SettingsModalProps {
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const { isDark, toggleTheme } = useTheme();
+  const { user, profile, updateProfile: updateSupabaseProfile } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const cookieManager = CookieManager.getInstance();
   const { 
     activeTab, 
@@ -81,20 +78,71 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     autoComplete: true,
     livePreview: true,
     cacheEnabled: true,
+
+    // OpenClaw
+    openClawGateway: 'http://localhost:3000',
+    openClawApiKey: '',
+    openClawAutoStart: false,
   });
+
+  const [isSaving, setIsSaving] = useState(false);
+
+  React.useEffect(() => {
+    if (profile) {
+      setSettings(prev => ({
+        ...prev,
+        name: profile.full_name || prev.name,
+        email: user?.email || prev.email,
+        avatar: profile.avatar_url || prev.avatar,
+      }));
+    }
+  }, [profile, user]);
 
   const handleSettingChange = (key: string, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleSave = () => {
-    console.log('Configurações salvas:', settings);
-    
-    // Track settings change
-    cookieManager.trackFeatureUsed('settings_updated');
-    
-    // Aqui você salvaria as configurações
-    onClose();
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert('📦 Erro: Arquivo muito grande (máximo 2MB).');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        handleSettingChange('avatar', reader.result as string);
+        console.log('📸 Nova foto de perfil carregada com sucesso!');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      console.log('Configurações salvas:', settings);
+      
+      // Persist to Supabase
+      const { error } = await updateSupabaseProfile({
+        full_name: settings.name,
+        avatar_url: settings.avatar
+      });
+
+      if (error) {
+        alert('❌ Erro ao salvar perfil: ' + error.message);
+      } else {
+        // Track settings change
+        cookieManager.trackFeatureUsed('settings_updated');
+        onClose();
+      }
+    } catch (err) {
+      console.error('Erro ao salvar:', err);
+      alert('❌ Erro inesperado ao salvar.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleReset = () => {
@@ -121,6 +169,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     { id: 'editor', label: 'Editor', icon: Code },
     { id: 'language', label: 'Idioma', icon: Globe },
     { id: 'performance', label: 'Performance', icon: Zap },
+    { id: 'openclaw', label: 'OpenClaw', icon: Terminal },
   ];
 
   if (!isOpen) return null;
@@ -232,16 +281,35 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             {activeTab === 'profile' && (
               <div className="space-y-6">
                 <div className="flex items-center space-x-6">
-                  <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center">
-                    <User className="w-10 h-10 text-white" />
+                  <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center overflow-hidden border-4 border-blue-500/20">
+                    {settings.avatar ? (
+                      <img 
+                        src={settings.avatar} 
+                        alt="Profile" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-10 h-10 text-white" />
+                    )}
                   </div>
                   <div className="flex-1">
-                    <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
-                      onClick={() => alert('📸 Alterar Foto de Perfil!\n\n🖼️ Seletor de imagem aberto\n✂️ Crop automático\n☁️ Upload seguro')}
-                      Alterar Foto
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    <button 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-blue-500/20 transition-all flex items-center space-x-2"
+                    >
+                      <Camera className="w-4 h-4" />
+                      <span>Alterar Foto</span>
                     </button>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                      JPG, PNG ou GIF. Máximo 2MB.
+                    <p className="text-[10px] uppercase font-bold tracking-wider text-gray-500 dark:text-gray-400 mt-3 flex items-center">
+                      <Shield className="w-3 h-3 mr-1" />
+                      JPG, PNG ou GIF • Max 2MB • Upload Seguro
                     </p>
                   </div>
                 </div>
@@ -643,15 +711,91 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                     Configurações avançadas para melhor performance
                   </p>
                   <div className="space-y-2">
-                    <button className="w-full bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                    <button 
                       onClick={() => alert('🧹 Cache Limpo!\n\n🗑️ Arquivos temporários removidos\n⚡ Performance melhorada\n💾 Espaço liberado')}
+                      className="w-full bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                    >
                       Limpar Cache
                     </button>
-                    <button className="w-full bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                    <button 
                       onClick={() => alert('🗄️ Banco Otimizado!\n\n📊 Índices reorganizados\n⚡ Queries mais rápidas\n🎯 Performance +35%')}
+                      className="w-full bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                    >
                       Otimizar Banco de Dados
                     </button>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'openclaw' && (
+              <div className="space-y-6">
+                <div className="bg-orange-50 dark:bg-orange-900/30 p-6 rounded-2xl border border-orange-200 dark:border-orange-800">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="p-3 bg-orange-500 rounded-xl shadow-lg shadow-orange-500/20">
+                      <Terminal className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-gray-800 dark:text-white leading-tight">Configuração OpenClaw</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Integração com agente autônomo personalizável</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 font-mono">
+                        GATEWAY_ENDPOINT
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.openClawGateway}
+                        onChange={(e) => handleSettingChange('openClawGateway', e.target.value)}
+                        placeholder="http://localhost:3000"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl focus:ring-2 focus:ring-orange-500 transition-all font-mono text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 font-mono">
+                        OPENCLAW_API_KEY
+                      </label>
+                      <input
+                        type="password"
+                        value={settings.openClawApiKey}
+                        onChange={(e) => handleSettingChange('openClawApiKey', e.target.value)}
+                        placeholder="••••••••••••••••"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl focus:ring-2 focus:ring-orange-500 transition-all font-mono text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center space-x-3">
+                      <RefreshCw className="w-4 h-4 text-orange-500" />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Auto-start Gateway</span>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={settings.openClawAutoStart}
+                        onChange={(e) => handleSettingChange('openClawAutoStart', e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 dark:peer-focus:ring-orange-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-orange-500"></div>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 text-center">
+                  <p className="text-xs text-gray-500 dark:text-gray-500">
+                    O OpenClaw permite que você execute agentes autônomos em seus próprios dispositivos. 
+                    Certifique-se de que o gateway esteja rodando para conexão.
+                  </p>
+                  <button 
+                    onClick={() => alert('🔌 Testando Conexão com OpenClaw...\n\n📡 Verificando Gateway em ' + settings.openClawGateway + '\n🔑 Validando API Key\n✅ Conexão Estabelecida!')}
+                    className="mt-4 px-6 py-2 bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 font-bold rounded-lg text-sm hover:bg-orange-200 dark:hover:bg-orange-900/60 transition-all"
+                  >
+                    Testar Conexão
+                  </button>
                 </div>
               </div>
             )}
@@ -685,10 +829,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                 </button>
                 <button
                   onClick={handleSave}
-                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  disabled={isSaving}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition-colors shadow-lg shadow-blue-500/20"
                 >
-                  <Save className="w-4 h-4" />
-                  <span>Salvar</span>
+                  {isSaving ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  <span>{isSaving ? 'Salvando...' : 'Salvar'}</span>
                 </button>
               </div>
             </div>

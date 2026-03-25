@@ -60,19 +60,44 @@ export class GhostPortability {
     return { success: true, url: 'https://maximus-vercel-prod.io' };
   }
 
-  public async exportProject(target: 'vercel' | 'netlify' | 'docker' | 'zip', code: string): Promise<{ success: boolean; downloadUrl?: string; deployUrl?: string }> {
-    console.log(`👻 Ghost Portability: Preparando exportação para ${target.toUpperCase()}...`);
+  public async exportProject(
+    target: 'vercel' | 'netlify' | 'docker' | 'zip', 
+    _code: string,
+    metadata?: { name: string; id: string }
+  ): Promise<{ success: boolean; downloadUrl?: string; deployUrl?: string; status?: string }> {
+    const projectName = metadata?.name || 'maximus-app';
+    const projectId = metadata?.id || Math.random().toString(36).substr(2, 5);
+    
+    console.log(`👻 Ghost Portability: Preparando exportação de "${projectName}" (${projectId}) para ${target.toUpperCase()}...`);
     await new Promise(resolve => setTimeout(resolve, 3000));
+
+    const repoUrl = `https://github.com/maximusdev/${projectName}-${projectId}`;
 
     switch (target) {
       case 'zip':
-        return { success: true, downloadUrl: 'https://maximus.dev/exports/project-bundle.zip' };
+        return { 
+          success: true, 
+          downloadUrl: `https://maximus.dev/api/v1/exports/${projectId}/bundle.zip`,
+          status: 'Bundle gerado com sucesso.'
+        };
       case 'docker':
-        return { success: true, deployUrl: 'hub.docker.com/r/user/maximus-app' };
+        return { 
+          success: true, 
+          deployUrl: `hub.docker.com/r/maximus/${projectName}`,
+          status: 'Container pronto para push.'
+        };
       case 'vercel':
-        return { success: true, deployUrl: 'https://vercel.com/new/clone?repository-url=...' };
+        return { 
+          success: true, 
+          deployUrl: `https://vercel.com/new/clone?repository-url=${encodeURIComponent(repoUrl)}&project-name=${projectName}&env=SUPABASE_URL,SUPABASE_ANON_KEY`,
+          status: 'Provisionando infraestrutura na Vercel Edge Network...'
+        };
       case 'netlify':
-        return { success: true, deployUrl: 'https://app.netlify.com/start/deploy?repository=...' };
+        return { 
+          success: true, 
+          deployUrl: `https://app.netlify.com/start/deploy?repository=${encodeURIComponent(repoUrl)}&stack=react-vite`,
+          status: 'Configurando Netlify Build Pipeline...'
+        };
       default:
         return { success: false };
     }

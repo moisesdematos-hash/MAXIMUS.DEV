@@ -32,6 +32,18 @@ export interface Project {
   code: string | null;
   type: string;
   is_public: boolean;
+  metadata: any;
   created_at: string;
   updated_at: string;
+}
+
+export interface Message {
+  id: string;
+  project_id: string;
+  user_id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  model_id: string | null;
+  metadata: any;
+  created_at: string;
 }

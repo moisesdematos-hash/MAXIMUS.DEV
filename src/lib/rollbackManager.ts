@@ -1,3 +1,5 @@
+import { TimeTravelAgent } from './timeTravelAgent';
+
 export interface RollbackStatus {
   inProgress: boolean;
   targetVersion: string;
@@ -9,16 +11,27 @@ export interface RollbackStatus {
 export class RollbackManager {
   private readonly ERROR_THRESHOLD = 0.05;
 
-  public async startMonitoring(version: string): Promise<boolean> {
+  public async startMonitoring(version: string, currentCode?: string): Promise<boolean> {
     console.log(`🔍 Monitorando saúde da versão ${version}...`);
     let errorRate = 0;
 
     for (let i = 0; i < 5; i++) {
       await new Promise(resolve => setTimeout(resolve, 500));
-      errorRate = Math.random() * 0.08;
+      errorRate = Math.random() * 0.10; // Aumento temporário para simular detecção de erro
       
       if (errorRate > this.ERROR_THRESHOLD) {
-        console.error(`🚨 Erro detectado!`);
+        console.error(`🚨 Erro detectado na versão ${version}!`);
+        
+        if (currentCode) {
+          console.log("🩹 Tentando reparação automática (Self-Healing)...");
+          const healed = await TimeTravelAgent.getInstance().selfHeal(currentCode, "Erro detectado durante monitoramento");
+          if (healed && !healed.includes('AI-HEAL-FAILED')) {
+            console.log("✅ Sistema auto-curado com sucesso.");
+            return true;
+          }
+        }
+
+        console.warn("🔄 Falha na auto-cura. Iniciando Rollback...");
         await this.triggerRollback(version, 'v-stable');
         return false;
       }

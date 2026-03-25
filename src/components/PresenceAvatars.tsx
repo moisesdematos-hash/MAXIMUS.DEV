@@ -1,23 +1,33 @@
 import React from 'react';
 import { useUI } from '../contexts/UIContext';
-import { AI_COLLABORATORS } from '../lib/collaborationAgent';
+import { useMultiAgent } from '../hooks/useMultiAgent';
 
 const PresenceAvatars: React.FC = () => {
-  const { collaborators, setCollaborators, setActivities, language } = useUI();
-  const { getCollabData } = useMultiAgent();
+  const { collaborators = [], setCollaborators, setActivities, language } = useUI();
+  const multiAgent = useMultiAgent();
+  const getCollabData = multiAgent?.getCollabData;
 
   // Sincronização periódica de presença e atividades
   React.useEffect(() => {
+    if (!getCollabData) return;
+
     const updateLoop = () => {
-      const { collaborators: collabs, activities: acts } = getCollabData();
-      setCollaborators([...collabs]);
-      setActivities([...acts]);
+      try {
+        const data = getCollabData();
+        if (data) {
+          const { collaborators: collabs = [], activities: acts = [] } = data;
+          setCollaborators([...collabs]);
+          setActivities([...acts]);
+        }
+      } catch (err) {
+        console.error('⚠️ PresenceAvatars Sync Error:', err);
+      }
     };
     
     updateLoop();
     const interval = setInterval(updateLoop, 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, [getCollabData, setCollaborators, setActivities]);
 
   return (
     <div className="flex -space-x-2 overflow-hidden items-center group cursor-help">

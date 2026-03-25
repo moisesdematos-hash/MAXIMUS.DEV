@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { MultiAgentOrchestrator } from '../lib/multiAgentSystem';
 
 export const useMultiAgent = () => {
@@ -13,30 +13,30 @@ export const useMultiAgent = () => {
     return () => clearInterval(interval);
   }, [orchestrator]);
 
-  const orchestrateFeature = async (prompt: string, history: any[] = []) => {
-    const result = await orchestrator.orchestrateFeatureCreation(prompt, history);
+  const orchestrateFeature = useCallback(async (prompt: string, history: any[] = [], modelId: string = 'maximus-neural', projectId?: string) => {
+    const result = await orchestrator.orchestrateFeatureCreation(prompt, history, modelId, projectId);
     setStatus(orchestrator.getFullSystemStatus());
     return result;
-  };
+  }, [orchestrator]);
 
-  const orchestrateDeploy = async (code: string) => {
+  const orchestrateDeploy = useCallback(async (code: string) => {
     const result = await orchestrator.orchestrateSafeDeploy(code);
     setStatus(orchestrator.getFullSystemStatus());
     return result;
-  };
+  }, [orchestrator]);
 
-  const getBlueprintInit = async (blueprintId: string) => {
+  const getBlueprintInit = useCallback(async (blueprintId: string) => {
     return orchestrator.getBlueprintInitialization(blueprintId);
-  };
+  }, [orchestrator]);
 
-  const getCollabData = () => {
+  const getCollabData = useCallback(() => {
     return orchestrator.getCollaborationData();
-  };
+  }, [orchestrator]);
 
-  const logAction = (agentId: string, action: string) => {
+  const logAction = useCallback((agentId: string, action: string) => {
     orchestrator.logAgentAction(agentId, action);
     setStatus(orchestrator.getFullSystemStatus());
-  };
+  }, [orchestrator]);
 
   return { 
     status, 

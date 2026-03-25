@@ -13,6 +13,7 @@ export interface Project {
   lastModified: string;
   collaborators?: number;
   isStarred?: boolean;
+  is_public?: boolean;
   tags?: string[];
   size?: string;
   framework?: string;

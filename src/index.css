@@ -266,13 +266,36 @@
     animation: scan-line 4s linear infinite;
   }
 
-.animate-glow {
-  animation: glow 2s ease-in-out infinite;
-  will-change: filter, opacity;
-}
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite;
+    will-change: filter, opacity;
+  }
 
-.animate-scan {
-  animation: scan 3s linear infinite;
-  will-change: transform;
-}
+  .animate-scan {
+    animation: scan 3s linear infinite;
+    will-change: transform;
+  }
+
+  /* Sovereign Sky Redesign Utilities */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  }
+
+  .dark .glass-card {
+    background: rgba(17, 24, 39, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .sovereign-pulse {
+    animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 1; filter: brightness(1); }
+    50% { opacity: 0.7; filter: brightness(1.5); }
+  }
 }

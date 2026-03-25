@@ -1,3 +1,5 @@
+import { seoService } from './seoService';
+
 export interface VentureStrategy {
   targetMarket: string;
   revenueModel: string;
@@ -29,7 +31,7 @@ export class VentureAgent {
     const hasAgents = codebase.includes('Agent');
     const hasAuth = codebase.includes('AuthContext');
 
-    return {
+    const strategy = {
       targetMarket: hasAgents ? 'B2B Enterprise AI' : 'SaaS Developers',
       revenueModel: hasAuth ? 'SaaS Subscription (Tiered)' : 'Open Core / License',
       competitors: ['Vercel', 'Abacus.AI', 'Cursor'],
@@ -40,9 +42,20 @@ export class VentureAgent {
         "Parcerias estratégicas com empresas de Cloud"
       ]
     };
+
+    // Update SEO dynamically
+    seoService.updateMetadata({
+      title: strategy.targetMarket,
+      description: strategy.pitch,
+      keywords: this.generateSEOTags(strategy.pitch).join(', '),
+      ogTitle: `Maximus DEV: ${strategy.targetMarket}`,
+      ogDescription: strategy.pitch
+    });
+
+    return strategy;
   }
 
-  public generateSEOTags(description: string): string[] {
+  public generateSEOTags(_description: string): string[] {
     return [
       'autonomous-dev',
       'next-gen-ide',

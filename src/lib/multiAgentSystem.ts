@@ -1,3 +1,5 @@
+import { supabase } from './supabase';
+import { logError } from './errorLogger';
 import { SecurityAuditEngine } from './securityAudit';
 import { GhostPortability } from './ghostPortability';
 import { ChaosSandbox } from './chaosSandbox';
@@ -58,8 +60,24 @@ export class MultiAgentOrchestrator {
   /**
    * Orquestra a criação completa de uma feature (Frontend + Backend)
    */
-  public async orchestrateFeatureCreation(prompt: string, history: any[] = []) {
+  public async orchestrateFeatureCreation(prompt: string, history: any[] = [], modelId: string = 'maximus-neural', projectId?: string) {
     console.log('🤖 Multi-Agent: Iniciando criação de feature com memória viva...');
+    
+    // Fetch project-specific integrations
+    let integrationsContext = '';
+    try {
+      const { data: integrations } = await supabase
+        .from('user_integrations')
+        .select('service_id, status')
+        .eq('project_id', projectId || null)
+        .eq('status', 'connected');
+
+      if (integrations && integrations.length > 0) {
+        integrationsContext = `INTEGRAÇÕES ATIVAS NO PROJETO: ${integrations.map(i => i.service_id).join(', ')}`;
+      }
+    } catch (err) {
+      console.warn('Falha ao buscar integrações para o contexto do agente.');
+    }
     
     const discussion: { agent: string; thought: string }[] = [];
 
@@ -71,18 +89,19 @@ export class MultiAgentOrchestrator {
     
     const augmentedPrompt = `
       CONTEXTO DO PROJETO: ${contextSummary.summary}
+      ${integrationsContext}
       ${dnaPrompt}
       USUÁRIO SOLICITA: ${prompt}
     `;
 
     // 1. Backend Generation
     this.logAgentAction('agent-backend', 'Estruturando API e esquemas de dados...');
-    const backendResult = await this.backendAgent.generateAPI(augmentedPrompt);
+    const backendResult = await this.backendAgent.generateAPI(augmentedPrompt, modelId);
     discussion.push({ agent: 'Backend', thought: backendResult.reasoning || 'API estruturada.' });
     
     // 2. Frontend Generation
     this.logAgentAction('agent-frontend', 'Gerando interface React e componentes UI...');
-    const frontendResult = await this.frontendAgent.generateUI(prompt);
+    const frontendResult = await this.frontendAgent.generateUI(prompt, modelId);
     discussion.push({ agent: 'Frontend', thought: frontendResult.reasoning || 'Componente UI gerado.' });
     
     // 3. Security Audit (Deep Scan)
@@ -145,8 +164,13 @@ export class MultiAgentOrchestrator {
       this.chaosAgent.strengthenSystem();
 
       return { success: true, url: deployResult.url };
-    } catch (error) {
+    } catch (error: any) {
       console.error('☁️ Orquestrador: Falha no deploy multi-cloud.');
+      logError({
+        error_message: 'Falha na orquestração multi-cloud',
+        severity: 'error',
+        stack_trace: error.stack
+      });
       return { success: false, error: 'Falha na orquestração multi-cloud.' };
     }
   }

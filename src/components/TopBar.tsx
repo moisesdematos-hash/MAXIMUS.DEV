@@ -1,29 +1,28 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import { 
   Zap, 
-  Crown, 
-  Bell, 
   Settings, 
-  User, 
-  ChevronDown,
   Search,
   Command,
   Plus,
-  GitBranch,
-  Share,
-  Save,
-  Database,
-  CreditCard,
-  Link,
-  Activity,
-  Shield,
-  Globe,
+  Share2,
   Rocket,
-  History as LucideHistory
+  History as LucideHistory,
+  Bell,
+  Link,
+  RefreshCw,
+  Wallet,
+  MoreVertical,
+  Edit2,
+  Copy,
+  Download,
+  Lock,
+  Eye,
+  FolderOpen,
+  Trash2,
+  User
 } from 'lucide-react';
 import { useUI } from '../contexts/UIContext';
-import { getTranslation } from '../lib/i18n';
-import { useObservability } from '../hooks/useObservability';
 import SettingsModal from './SettingsModal';
 import TemplatesModal from './TemplatesModal';
 import DocsModal from './DocsModal';
@@ -32,19 +31,21 @@ import DatabaseModal from './DatabaseModal';
 import PaymentsModal from './PaymentsModal';
 import IntegrationsModal from './IntegrationsModal';
 import ShareModal from './ShareModal';
+import ThemeToggle from './ThemeToggle';
 import UserMenu from './UserMenu';
 import NotificationsModal from './NotificationsModal';
 import MonitoringDashboard from './MonitoringDashboard';
 import PresenceAvatars from './PresenceAvatars';
 import { useProjects } from '../contexts/ProjectContext';
-import CookieManager from '../utils/cookieManager';
+import { useAuth } from '../contexts/AuthContext';
 
 interface TopBarProps {
   onBackToWelcome?: () => void;
 }
 
 const TopBar = ({ onBackToWelcome }: TopBarProps) => {
-  const { addProject, currentProject, exportProjects } = useProjects();
+  const { user, profile } = useAuth();
+  const { addProject, currentProject, updateProject, deleteProject, exportProjects } = useProjects();
   const { 
     showSettings, setShowSettings,
     showTemplates, setShowTemplates,
@@ -56,23 +57,16 @@ const TopBar = ({ onBackToWelcome }: TopBarProps) => {
     showSearchModal, setShowSearchModal,
     showShareModal, setShowShareModal,
     showNotifications, setShowNotifications,
-    showUserMenu, setShowUserMenu,
     showMonitoringDashboard, setShowMonitoringDashboard,
     language, setLanguage,
-    securityStatus, vulnerabilities,
-    globalSavings, setShowExportModal,
-    showSuggestions, setShowSuggestions,
     showTimeTravel, setShowTimeTravel,
-    showDesignPilot, setShowDesignPilot,
-    showVentureDashboard, setShowVentureDashboard
+    showVentureDashboard, setShowVentureDashboard,
+    credits
   } = useUI();
-  
-  const { currentMetrics } = useObservability();
-  const [isGlobalDeploying, setIsGlobalDeploying] = React.useState(false);
+
+  const [showUserMenu, setShowUserMenu] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
   const searchInputRef = React.useRef<HTMLInputElement>(null);
-  
-  const cookieManager = CookieManager.getInstance();
 
   // Keyboard shortcut handler
   React.useEffect(() => {
@@ -109,74 +103,8 @@ const TopBar = ({ onBackToWelcome }: TopBarProps) => {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      console.log('🔍 Buscando:', searchQuery);
-      // Aqui você implementaria a lógica de busca
       performSearch(searchQuery);
     }
-  };
-
-  const performSearch = (query: string) => {
-    const searchResults = [
-      { type: 'projeto', name: 'E-commerce Dashboard', path: '/projects/ecommerce' },
-      { type: 'template', name: 'Blog Moderno', path: '/templates/blog' },
-      { type: 'comando', name: 'Deploy Projeto', action: () => console.log('Deploy iniciado') },
-      { type: 'integração', name: 'Conectar Stripe', action: () => setShowIntegrations(true) },
-      { type: 'arquivo', name: 'App.tsx', path: '/src/App.tsx' },
-    ].filter(item => 
-      item.name.toLowerCase().includes(query.toLowerCase()) ||
-      item.type.toLowerCase().includes(query.toLowerCase())
-    );
-
-    console.log('📊 Resultados encontrados:', searchResults);
-    
-    // Simular navegação ou ação
-    if (searchResults.length > 0) {
-      const firstResult = searchResults[0];
-      if (firstResult.action) {
-        firstResult.action();
-      }
-      setShowSearchModal(false);
-      setSearchQuery('');
-    }
-  };
-
-  const handleGlobalDeploy = async () => {
-    if (isGlobalDeploying) return;
-    
-    setIsGlobalDeploying(true);
-    
-    const deploySteps = [
-      '🔍 Analisando projeto completo...',
-      '🤖 Aplicando otimizações de IA...',
-      '📦 Gerando build otimizado...',
-      '🌐 Configurando CDN global (200+ locais)...',
-      '🔒 Aplicando SSL A+ automático...',
-      '🎯 Ativando auto-scaling inteligente...',
-      '⚡ Configurando cache inteligente...',
-      '📊 Integrando analytics automático...',
-      '🚀 Deploy concluído!'
-    ];
-    
-    // Faster deployment simulation
-    for (let i = 0; i < deploySteps.length; i++) {
-      console.log(deploySteps[i]);
-      await new Promise(resolve => setTimeout(resolve, 800));
-    }
-    
-    const projectUrl = `https://maximusdev-${Math.random().toString(36).substring(2, 8)}.maximus.dev`;
-    
-    // Show success notification with copy functionality
-    const message = `🚀 Deploy Zero-Config Global Concluído!\n\n✅ Status: Online em 200+ locais\n🌐 URL: ${projectUrl}\n🔒 SSL: A+ Rating automático\n⚡ CDN: Ativo globalmente\n🎯 Auto-scaling: Configurado\n📊 Analytics: Integrado\n\n⏱️ Tempo total: 6.4 segundos\n💰 Custo: $0 (tudo incluído)\n🏆 Performance: 98/100\n\n🎉 Seu projeto está no ar!`;
-    
-    // Copy URL to clipboard
-    try {
-      await navigator.clipboard.writeText(projectUrl);
-      alert(message + '\n\n📋 URL copiada para área de transferência!');
-    } catch (err) {
-      alert(message);
-    }
-    
-    setIsGlobalDeploying(false);
   };
 
   return (
@@ -208,267 +136,315 @@ const TopBar = ({ onBackToWelcome }: TopBarProps) => {
             >
               {language === 'pt' ? 'Docs' : 'Docs'}
             </button>
+            <button
+              onClick={() => setShowIntegrations(true)}
+              className="px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-blue-900/20 rounded-md transition-colors"
+            >
+              {language === 'pt' ? 'Integrações' : 'Integrations'}
+            </button>
           </nav>
         </div>
 
-        {/* Center Section - Search */}
-        <div className="flex-1 max-w-md mx-4">
+        {/* Center Section - Search & Project Management */}
+        <div className="flex-1 flex items-center justify-center space-x-6 mx-4">
+          {/* Resized Search */}
           <div 
-            className="relative cursor-pointer"
+            className="w-full max-w-[180px] relative cursor-pointer group"
             onClick={() => setShowSearchModal(true)}
           >
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400 group-hover:text-blue-500 transition-colors" />
             <input
               type="text"
-              placeholder="Buscar projetos, comandos..."
+              placeholder="Buscar..."
               value=""
               readOnly
-              className="w-full pl-10 pr-12 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 dark:text-white placeholder-gray-500"
+              className="w-full pl-8 pr-10 py-1.5 text-xs bg-gray-100 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none text-gray-800 dark:text-white placeholder-gray-500 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-all"
             />
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
-              <kbd className="px-1.5 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded border">
-                <button 
-                  onClick={() => setShowSearchModal(true)}
-                  className="flex items-center hover:bg-gray-300 dark:hover:bg-gray-600 rounded px-1 transition-colors"
-                  title="Abrir busca (Cmd+K)"
-                >
-                  <Command className="w-3 h-3" />
-                </button>
-              </kbd>
-              <kbd className="px-1.5 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded border">
-                <button 
-                  onClick={() => setShowSearchModal(true)}
-                  className="hover:bg-gray-300 dark:hover:bg-gray-600 rounded px-1 transition-colors"
-                  title="Abrir busca (Cmd+K)"
-                >
-                  K
-                </button>
+            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center">
+              <kbd className="px-1 py-0.5 text-[10px] bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded border border-gray-300 dark:border-gray-600">
+                K
               </kbd>
             </div>
           </div>
-        </div>
+
+          {/* Project Details & Management */}
+          <div className="flex items-center space-x-3 px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl hover:shadow-lg hover:shadow-blue-500/5 transition-all group/project">
+            <div className="flex flex-col items-start leading-none min-w-0">
+              <div className="flex items-center space-x-2">
+                <span className="text-xs font-black text-gray-800 dark:text-white truncate max-w-[200px]">
+                  {currentProject?.name || 'Nenhum Projeto Ativo'}
+                </span>
+                <div className={`w-1 h-1 rounded-full ${currentProject ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`} />
+              </div>
+              <span className="text-[9px] text-gray-500 dark:text-gray-500 font-medium uppercase tracking-tighter">
+                {currentProject ? `${currentProject.type} • ${currentProject.is_public ? 'Público' : 'Privado'}` : 'Selecione ou crie um novo'}
+              </span>
+            </div>
+
+            <div className="h-6 w-px bg-gray-200 dark:bg-gray-800" />
+
+            <div className="relative group/menu">
+              <button className="p-1 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors text-gray-400 hover:text-blue-500">
+                <MoreVertical className="w-4 h-4" />
+              </button>
+              
+              {/* Project Actions Dropdown */}
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-[60] backdrop-blur-xl">
+                 {/* ... (keep actions rest same) ... */}
+                   {/* Primary Actions */}
+                   <div className="px-2 pb-1 mb-1 border-b border-gray-100 dark:border-gray-800">
+                     <button 
+                       onClick={() => {
+                         if (!currentProject) return;
+                         const newName = prompt('Novo nome do projeto:', currentProject.name);
+                         if (newName) updateProject(currentProject.id, { name: newName });
+                       }}
+                       className="flex items-center space-x-3 w-full px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors group/item"
+                     >
+                       <Edit2 className="w-4 h-4 text-blue-500 group-hover/item:scale-110 transition-transform" />
+                       <div className="flex flex-col items-start">
+                         <span>Renomear Projeto</span>
+                         <span className="text-[9px] font-medium text-gray-500 dark:text-gray-500">Alterar o nome identificador</span>
+                       </div>
+                     </button>
+
+                     <button 
+                       onClick={() => {
+                         if (!currentProject) return;
+                         const newId = addProject({ 
+                           ...currentProject, 
+                           name: `${currentProject.name} (Cópia)`,
+                           createdAt: new Date().toISOString(),
+                           lastModified: new Date().toISOString()
+                         } as any);
+                         alert(`🚀 Projeto duplicado com sucesso!\nID: ${newId}`);
+                       }}
+                       className="flex items-center space-x-3 w-full px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors group/item"
+                     >
+                       <Copy className="w-4 h-4 text-purple-500 group-item:scale-110 transition-transform" />
+                       <div className="flex flex-col items-start">
+                         <span>Duplicar Projeto</span>
+                         <span className="text-[9px] font-medium text-gray-500 dark:text-gray-500">Criar uma cópia idêntica</span>
+                       </div>
+                     </button>
+                   </div>
+
+                   {/* Visibility & Export */}
+                   <div className="px-2 py-1 border-b border-gray-100 dark:border-gray-800">
+                     <div className="px-3 py-1 text-[9px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest">Configurações</div>
+                     <button 
+                       onClick={() => {
+                         if (!currentProject) return;
+                         const nextVis = currentProject.is_public ? 'Privado' : 'Público';
+                         updateProject(currentProject.id, { is_public: !currentProject.is_public } as any);
+                         alert(`👁️ Visibilidade alterada para: ${nextVis}`);
+                       }}
+                       className="flex items-center space-x-3 w-full px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors"
+                     >
+                       {currentProject?.is_public ? <Eye className="w-4 h-4 text-emerald-500" /> : <Lock className="w-4 h-4 text-amber-500" />}
+                       <div className="flex flex-col items-start">
+                         <span>Alterar Visibilidade</span>
+                         <span className="text-[9px] font-medium text-gray-500 dark:text-gray-500">
+                           Atual: {currentProject?.is_public ? 'Público' : 'Privado'}
+                         </span>
+                       </div>
+                     </button>
+
+                     <button 
+                       onClick={() => {
+                         if (!currentProject) return;
+                         const data = exportProjects();
+                         const blob = new Blob([data], { type: 'application/json' });
+                         const url = URL.createObjectURL(blob);
+                         const a = document.createElement('a');
+                         a.href = url;
+                         a.download = `${currentProject.name.replace(/\s+/g, '_')}_backup.json`;
+                         a.click();
+                       }}
+                       className="flex items-center space-x-3 w-full px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors group/item"
+                     >
+                       <Download className="w-4 h-4 text-emerald-500" />
+                       <div className="flex flex-col items-start">
+                         <span>Baixar Projeto</span>
+                         <span className="text-[9px] font-medium text-gray-500 dark:text-gray-500">Exportar código e metadados</span>
+                       </div>
+                     </button>
+                   </div>
+
+                   {/* History & Recents */}
+                   <div className="px-2 py-1 border-b border-gray-100 dark:border-gray-800">
+                     <button 
+                       onClick={() => setShowTimeTravel(true)}
+                       className="flex items-center space-x-3 w-full px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors group/item"
+                     >
+                       <LucideHistory className="w-4 h-4 text-indigo-500" />
+                       <div className="flex flex-col items-start">
+                         <span>Histórico de Versões</span>
+                         <span className="text-[9px] font-medium text-gray-500 dark:text-gray-500">Ver snapshots temporais</span>
+                       </div>
+                     </button>
+
+                     <button 
+                       onClick={() => setShowSearchModal(true)}
+                       className="flex items-center space-x-3 w-full px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors group/item"
+                     >
+                       <FolderOpen className="w-4 h-4 text-gray-500" />
+                       <div className="flex flex-col items-start">
+                         <span>Projetos Recentes</span>
+                         <span className="text-[9px] font-medium text-gray-500 dark:text-gray-500">Abrir outros espaços de trabalho</span>
+                       </div>
+                     </button>
+                   </div>
+
+                   {/* Danger Zone */}
+                   <div className="px-2 pt-1">
+                     <button 
+                       onClick={() => {
+                         if (!currentProject) return;
+                         if (confirm(`⚠️ Tem certeza que deseja EXCLUIR o projeto "${currentProject.name}"? Esta ação não pode ser desfeita.`)) {
+                           deleteProject(currentProject.id);
+                           alert('🗑️ Projeto removido permanentemente.');
+                         }
+                       }}
+                       className="flex items-center space-x-3 w-full px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                     >
+                       <Trash2 className="w-4 h-4" />
+                       <div className="flex flex-col items-start">
+                         <span>Excluir Permanentemente</span>
+                         <span className="text-[9px] font-medium text-red-400 dark:text-red-400 opacity-70">Apagar todos os arquivos</span>
+                       </div>
+                     </button>
+                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
         {/* Right Section */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2">
           <PresenceAvatars />
-          <div className="h-8 w-px bg-gray-200 dark:bg-gray-700 mx-2" />
           
+          <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-2" />
+
+
+          {/* Credits Display */}
           <button 
-            onClick={() => setShowVentureDashboard(true)}
-            className="btn-icon-sm ml-2 bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/20 hover:scale-110 transition-all border-none"
-            title="Sovereign Launchpad"
+            onClick={() => setShowPaymentsModal(true)}
+            className="flex items-center space-x-2 px-3 py-1 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200/50 dark:border-emerald-800/30 rounded-lg hover:scale-105 transition-all duration-300 group"
+            title="Seu Saldo de Créditos"
           >
-            <Rocket className="w-4 h-4 fill-current" />
+            <div className="w-5 h-5 bg-emerald-100 dark:bg-emerald-800 rounded-full flex items-center justify-center group-hover:rotate-12 transition-transform">
+              <Wallet className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div className="flex flex-col items-start leading-none">
+              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-tighter">Créditos</span>
+              <span className="text-sm font-black text-gray-800 dark:text-white">{credits.toLocaleString()}</span>
+            </div>
+            <Plus className="w-2.5 h-2.5 text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity ml-1" />
           </button>
 
-          <button 
-            onClick={() => setShowTimeTravel(!showTimeTravel)}
-            className={`btn-icon-sm ml-2 ${showTimeTravel ? 'bg-indigo-100 text-indigo-600 shadow-indigo-500/20' : 'bg-gray-50 dark:bg-gray-800 text-gray-400'} hover:scale-110 transition-all`}
-            title="Neural Time Travel"
+          <button
+            onClick={() => {
+              setShowPaymentsModal(true);
+              // Trigger sync after modal opens is handled by the modal's internal logic or can be a custom event
+            }}
+            className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all group"
+            title="Sincronizar Créditos"
           >
-            <LucideHistory className="w-4 h-4" />
+            <RefreshCw className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-700" />
           </button>
+          
+          <div className="h-4 w-px bg-gray-200 dark:bg-gray-800 mx-1" />
+          
+          <div className="flex items-center -space-x-1">
+            <button 
+              onClick={() => setShowVentureDashboard(true)}
+              className="p-1.5 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-all"
+              title="Sovereign Launchpad"
+            >
+              <Rocket className="w-4 h-4" />
+            </button>
 
-          <div className="h-8 w-px bg-gray-200 dark:bg-gray-700 mx-2" />
-          <UserMenu 
-            isOpen={showUserMenu} 
-            onClose={() => setShowUserMenu(false)} 
-            onOpenSettings={() => setShowSettings(true)} 
-          />
-          {/* Real-time Metrics */}
-          <div 
-            className="hidden lg:flex items-center space-x-4 px-4 border-r border-gray-200 dark:border-gray-700 h-8 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors rounded-lg" 
-            title="Abrir Dashboard de Monitoramento"
-            onClick={() => setShowMonitoringDashboard(true)}
-          >
-            <div className="flex items-center space-x-1.5" title={getTranslation(language, 'credits.saved')}>
-              <Zap className="w-3.5 h-3.5 text-yellow-500 fill-current animate-bounce" />
-              <span className="text-[10px] font-bold text-yellow-600 dark:text-yellow-400">-{globalSavings} CR</span>
-            </div>
-            <div className="flex items-center space-x-1.5" title="Latência do Sistema">
-              <Activity className={`w-3.5 h-3.5 ${currentMetrics && currentMetrics.latency > 100 ? 'text-red-500' : 'text-green-500'}`} />
-              <span className="text-[10px] font-mono font-medium text-gray-500">{currentMetrics ? `${currentMetrics.latency.toFixed(0)}ms` : '--'}</span>
-            </div>
-            <div className="flex items-center space-x-1.5" title="Segurança OWASP">
-              <Shield className="w-3.5 h-3.5 text-blue-500" />
-              <span className="text-[10px] font-mono font-medium text-gray-500">SEC: A+</span>
-            </div>
-            <div className="flex items-center space-x-1.5" title="Multi-Cloud Status (Vercel Primário)">
-              <Globe className="w-3.5 h-3.5 text-purple-500 animate-pulse" />
-              <span className="text-[10px] font-mono font-medium text-gray-500">CLOUD: OK</span>
-            </div>
+            <button 
+              onClick={() => setShowShareModal(true)}
+              className="p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
+              title="Compartilhar Projeto"
+            >
+              <Share2 className="w-4 h-4" />
+            </button>
+
+            <button 
+              onClick={() => setShowTimeTravel(!showTimeTravel)}
+              className={`p-1.5 ${showTimeTravel ? 'text-indigo-600 bg-indigo-50' : 'text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'} rounded-lg transition-all`}
+              title="Neural Time Travel"
+            >
+              <LucideHistory className="w-4 h-4" />
+            </button>
           </div>
 
-          {/* Action Buttons */}
-          <button 
-            onClick={() => {
-              const projectId = addProject({
-                name: `Projeto ${new Date().toLocaleDateString()}`,
-                description: 'Novo projeto criado via interface',
-                type: 'react',
-                status: 'active',
-                collaborators: 1,
-                isStarred: false,
-                tags: ['novo', 'react'],
-                size: '0 KB',
-                framework: 'React + TypeScript',
-                code: '',
-                version: '1.0.0',
-                dependencies: ['react', 'react-dom'],
-                features: ['Projeto em branco'],
-                analytics: {
-                  views: 0,
-                  deploys: 0,
-                  performance: 100
-                }
-              });
-              alert(`🎉 Novo Projeto Criado!\n\n📁 ID: ${projectId}\n✅ Workspace limpo\n📊 Registro salvo automaticamente\n🚀 Pronto para desenvolvimento!`);
-            }}
-            className="btn-icon-sm" 
-            title="Novo Projeto"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-          
-          <button 
-            onClick={() => setShowIntegrations(true)}
-            className="btn-compact bg-gradient-to-r from-green-500 via-blue-500 to-purple-500 hover:from-green-600 hover:via-blue-600 hover:to-purple-600 text-white transform hover:scale-105 shadow-md relative overflow-hidden"
-            title="🤖 Conectar Todos os Serviços"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
-            <div className="flex items-center space-x-1.5 relative z-10">
-              <div className="w-3.5 h-3.5 relative">
-                <div className="absolute inset-0 bg-white rounded-full animate-pulse opacity-75"></div>
-                <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold">🤖</span>
-              </div>
-              <span className="font-semibold">Conectar Serviços</span>
-            </div>
-          </button>
-          
-          <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-1" />
+          <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-2" />
 
-          {/* Security Pulse Indicator */}
-          <button 
-            onClick={() => setShowSettings(true)} // Open settings or security panel
-            className={`btn-icon-sm group relative ${
-              securityStatus === 'critical' ? 'text-red-500 animate-pulse' : 
-              securityStatus === 'warning' ? 'text-yellow-500' : 'text-emerald-500'
-            }`}
-            title={language === 'pt' ? `Segurança: ${securityStatus.toUpperCase()}` : `Security: ${securityStatus.toUpperCase()}`}
-          >
-            <Shield className="w-4 h-4 shadow-sm" />
+          {/* Language / Notifications / Settings */}
+          <div className="flex items-center space-x-1 bg-gray-50 dark:bg-gray-900/50 p-1 rounded-xl border border-gray-200 dark:border-gray-800/50">
+            <button
+              onClick={() => setLanguage(language === 'pt' ? 'en' : 'pt')}
+              className="px-2 py-1 text-[10px] font-black text-gray-500 hover:text-blue-500 transition-colors uppercase"
+            >
+              {language}
+            </button>
             
-            {/* Tooltip Detalhado */}
-            <div className="absolute top-full right-0 mt-2 w-48 p-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-              <div className="flex items-center space-x-2 mb-2">
-                <div className={`w-2 h-2 rounded-full ${
-                  securityStatus === 'critical' ? 'bg-red-500' : 
-                  securityStatus === 'warning' ? 'bg-yellow-500' : 'bg-emerald-500'
-                }`} />
-                <span className="text-xs font-bold uppercase">{securityStatus}</span>
-              </div>
-              <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight">
-                {vulnerabilities.length > 0 
-                  ? `${vulnerabilities.length} vulnerabilidades detectadas pelo Scanner Neural.` 
-                  : 'Sistema limpo. Todos os padrões de segurança foram validados.'}
-              </p>
-            </div>
-          </button>
+            <div className="h-4 w-px bg-gray-200 dark:bg-gray-800 mx-1" />
+            <ThemeToggle />
+            <div className="h-4 w-px bg-gray-200 dark:bg-gray-800 mx-1" />
 
-          <button 
-            onClick={() => window.open('https://github.com', '_blank')}
-            className="btn-icon-sm" 
-            title="Git"
-          >
-            <GitBranch className="w-4 h-4" />
-          </button>
-          
-          <button 
-            onClick={() => {
-              if (currentProject) {
-                const analytics = currentProject.analytics || { views: 0, deploys: 0, performance: 0 };
-                alert(`💾 Projeto Salvo!\n\n📁 ${currentProject.name}\n✅ Código: ${currentProject.size || '0KB'}\n☁️ Backup automático\n📊 ${analytics.views} visualizações\n🔄 Sincronização completa`);
-              } else {
-                alert('💾 Auto-Save Ativo!\n\n✅ Todas as alterações salvas\n☁️ Backup automático\n🔄 Sincronização em tempo real');
-              }
-            }}
-            className="btn-icon-sm" 
-            title="Salvar"
-          >
-            <Save className="w-4 h-4" />
-          </button>
-          
-          <button 
-            onClick={() => {
-              if (currentProject) {
-                setShowShareModal(true);
-              } else {
-                alert(language === 'pt' ? '📤 Compartilhamento!\n\n⚠️ Nenhum projeto ativo\n📁 Crie ou abra um projeto\n🔗 Compartilhamento disponível' : '📤 Sharing!\n\n⚠️ No active project\n📁 Create or open a project\n🔗 Sharing available');
-              }
-            }}
-            className="btn-icon-sm" 
-            title={language === 'pt' ? 'Compartilhar' : 'Share'}
-          >
-            <Share className="w-4 h-4" />
-          </button>
-
-          {/* Language Switcher */}
-          <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 border border-gray-200 dark:border-gray-700">
-            <button
-              onClick={() => setLanguage('pt')}
-              className={`px-1.5 py-0.5 text-[10px] font-bold rounded ${language === 'pt' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+            <button 
+              onClick={() => setShowNotifications(true)}
+              className="relative p-1.5 text-gray-400 hover:text-blue-500 transition-colors" 
+              title="Notificações"
             >
-              PT
+              <Bell className="w-4 h-4" />
+              <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-white dark:border-gray-900" />
             </button>
-            <button
-              onClick={() => setLanguage('en')}
-              className={`px-1.5 py-0.5 text-[10px] font-bold rounded ${language === 'en' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+
+            <button 
+              onClick={() => setShowSettings(true)}
+              className="p-1.5 text-gray-400 hover:text-blue-500 transition-colors" 
+              title="Configurações"
             >
-              EN
+              <Settings className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Divider */}
-          <div className="w-px h-6 bg-gray-300 dark:bg-gray-600"></div>
+          <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-2" />
 
-          {/* Notifications */}
-          <button 
-            onClick={() => setShowNotifications(true)}
-            className="relative p-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors" 
-            title="Notificações"
-          >
-            <Bell className="w-4 h-4" />
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
-              <span className="w-1.5 h-1.5 bg-white rounded-full"></span>
-            </span>
-          </button>
-
-          {/* Plan Badge */}
-          <div className="flex items-center space-x-1 px-2 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg">
-            <Crown className="w-3 h-3 text-white" />
-            <span className="text-xs font-medium text-white">Pro</span>
-          </div>
-
-          {/* Settings */}
-          <button 
-            onClick={() => setShowSettings(true)}
-            className="btn-icon-sm" 
-            title="Configurações"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
-
-          {/* User Menu */}
-          <div className="flex items-center space-x-2 pl-2">
-            <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center">
-              <User className="w-4 h-4 text-white" />
-            </div>
+          {/* Profile */}
+          <div className="flex items-center space-x-3 ml-2">
             <button 
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+              className="hidden sm:flex flex-col items-end leading-tight mr-1 hover:opacity-80 transition-opacity"
             >
-              <span className="text-sm font-medium hidden sm:block">João</span>
-              <ChevronDown className="w-3 h-3" />
+              <span className="text-[10px] font-bold text-gray-800 dark:text-gray-200">
+                {profile?.full_name || user?.email?.split('@')[0] || 'Dev Maximus'}
+              </span>
+              <span className="text-[8px] font-medium text-blue-500 uppercase tracking-widest">
+                Professional
+              </span>
+            </button>
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="w-8 h-8 rounded-full overflow-hidden border-2 border-blue-500/20 hover:border-blue-500/50 transition-all shadow-lg shadow-blue-500/10"
+            >
+              {profile?.avatar_url ? (
+                <img 
+                  src={profile.avatar_url} 
+                  alt="Avatar" 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                  <User className="w-4 h-4 text-white" />
+                </div>
+              )}
             </button>
           </div>
         </div>
@@ -521,6 +497,7 @@ const TopBar = ({ onBackToWelcome }: TopBarProps) => {
         <IntegrationsModal 
           isOpen={showIntegrations}
           onClose={() => setShowIntegrations(false)}
+          projectId={currentProject?.id}
         />
       )}
 
@@ -552,7 +529,6 @@ const TopBar = ({ onBackToWelcome }: TopBarProps) => {
       {/* Monitoring Dashboard */}
       {showMonitoringDashboard && (
         <MonitoringDashboard 
-          isOpen={showMonitoringDashboard}
           onClose={() => setShowMonitoringDashboard(false)}
         />
       )}

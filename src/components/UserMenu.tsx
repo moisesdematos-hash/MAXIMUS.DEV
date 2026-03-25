@@ -202,6 +202,23 @@ const UserMenu: React.FC<UserMenuProps> = ({ isOpen, onClose, onOpenSettings }) 
     };
   }, [isOpen, onClose]);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert('📦 Erro: Arquivo muito grande (máximo 2MB).');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditFormData(prev => ({ ...prev, avatar_url: reader.result as string }));
+        console.log('📸 Nova foto de perfil selecionada no menu!');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleProfileUpdate = async () => {
     setIsSavingProfile(true);
     try {
@@ -281,8 +298,16 @@ const UserMenu: React.FC<UserMenuProps> = ({ isOpen, onClose, onOpenSettings }) 
         <div className="p-6 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900 dark:to-purple-900 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-4">
             <div className="relative">
-              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                <User className="w-8 h-8 text-white" />
+              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center overflow-hidden border-2 border-white dark:border-gray-800">
+                {profile?.avatar_url ? (
+                  <img 
+                    src={profile.avatar_url} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User className="w-8 h-8 text-white" />
+                )}
               </div>
               <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-800">
                 <Crown className="w-3 h-3 text-white" />
@@ -385,6 +410,32 @@ const UserMenu: React.FC<UserMenuProps> = ({ isOpen, onClose, onOpenSettings }) 
                 </>
               ) : (
                 <div className="space-y-4">
+                  <div className="flex flex-col items-center space-y-3 mb-4">
+                    <div className="relative group">
+                      <div className="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center overflow-hidden border-2 border-blue-500/20">
+                        {editFormData.avatar_url ? (
+                          <img 
+                            src={editFormData.avatar_url} 
+                            alt="Preview" 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <User className="w-10 h-10 text-gray-400" />
+                        )}
+                      </div>
+                      <label className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 rounded-full cursor-pointer transition-opacity">
+                        <Camera className="w-6 h-6 text-white" />
+                        <input 
+                          type="file" 
+                          onChange={handleFileChange} 
+                          accept="image/*" 
+                          className="hidden" 
+                        />
+                      </label>
+                    </div>
+                    <span className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Clique para alterar</span>
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Nome completo
