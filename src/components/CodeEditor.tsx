@@ -81,6 +81,7 @@ import {
   ShieldCheck,
   RotateCcw
 } from 'lucide-react';
+import { useProjects } from '../contexts/ProjectContext';
 // No longer needed: import CodeAnalyzer from './CodeAnalyzer';
 
 interface CodeEditorProps {
@@ -140,6 +141,17 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ code, onCodeChange }) => {
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLIFrameElement>(null);
+
+  const { saveCheckpoint } = useProjects();
+
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      if (code && code.trim() !== '') {
+        saveCheckpoint(code);
+      }
+    }, 2000);
+    return () => clearTimeout(debounceTimer);
+  }, [code, saveCheckpoint]);
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newCode = e.target.value;
@@ -623,11 +635,44 @@ export default App;"
                       </head>
                       <body>
                         <div id="root"></div>
-                        <script type="text/babel">
-                          ${code}
-                          
-                          const root = ReactDOM.createRoot(document.getElementById('root'));
-                          root.render(React.createElement(App));
+                        <script>
+                          // Prevenir erros de console no navegador por falta de require/exports
+                          window.exports = {};
+                          window.require = (mod) => { if (mod === 'react') return React; return {}; };
+                        </script>
+                        <script type="text/babel" data-presets="react,typescript">
+                          try {
+                            // Extraimos o código e evitamos problemas de import/export isolado no navegador
+                            const rawCode = \`${code.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`;
+                            const executableCode = rawCode
+                              .replace(/import\\s+.*?;?\\n/g, '') // remove imports
+                              .replace(/export\\s+default\\s+/g, '') // remove export default
+                              .replace(/export\\s+/g, ''); // remove export simples
+                            
+                            // Compilação com Babel Standalone
+                            const transpiled = Babel.transform(executableCode, { 
+                              presets: ['react', 'typescript'],
+                              filename: 'App.tsx'
+                            }).code;
+                            
+                            // Avalia no escopo local
+                            eval(transpiled);
+                            
+                            const root = ReactDOM.createRoot(document.getElementById('root'));
+                            if (typeof App !== 'undefined') {
+                              root.render(React.createElement(App));
+                            } else {
+                              throw new Error("O componente App não foi encontrado no código gerado.");
+                            }
+                          } catch (err) {
+                            document.getElementById('root').innerHTML = \`
+                              <div style="background:#fee2e2; border:1px solid #ef4444; margin:16px; padding:16px; border-radius:8px; color:#b91c1c; font-family:monospace;">
+                                <b style="display:block;margin-bottom:8px;">Erro de Renderização do Preview:</b>
+                                \${err.toString().replace(/\\n/g, '<br/>')}
+                              </div>
+                            \`;
+                            console.error("Preview Error:", err);
+                          }
                         </script>
                       </body>
                       </html>

@@ -52,6 +52,7 @@ interface ProjectContextType {
   pulseData: PulseData | null;
   calculatePulse: (code: string) => Promise<void>;
   syncing: boolean;
+  saveCheckpoint: (code: string) => void;
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
@@ -265,6 +266,13 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
     console.log('📝 Projeto atualizado:', id);
   };
 
+  const saveCheckpoint = (code: string) => {
+    if (currentProject) {
+      updateProject(currentProject.id, { code });
+      console.log('💾 Checkpoint silencioso salvo:', currentProject.id);
+    }
+  };
+
   const deleteProject = (id: string) => {
     setProjects(prev => prev.filter(project => project.id !== id));
     
@@ -370,7 +378,8 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
     clearAllProjects,
     pulseData,
     calculatePulse,
-    syncing
+    syncing,
+    saveCheckpoint
   };
 
   return (

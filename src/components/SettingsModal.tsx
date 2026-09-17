@@ -39,9 +39,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     tabHistory, 
     navigateToTab, 
     goBackTab, 
-    goForwardTab, 
-    canGoBack, 
-    canGoForward 
+    goForwardTab 
   } = useTabNavigation('profile');
 
   const [settings, setSettings] = useState({
@@ -189,31 +187,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           </div>
           
           <nav className="p-4">
-            {/* Navigation Controls */}
-            <div className="flex items-center space-x-1 mb-4 pb-4 border-b border-gray-200 dark:border-gray-600">
-              <button
-                onClick={goBackTab}
-                disabled={!canGoBack}
-                className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Voltar"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-              <button
-                onClick={goForwardTab}
-                disabled={!canGoForward}
-                className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Avançar"
-              >
-                <ArrowRight className="w-4 h-4" />
-              </button>
-              <div className="flex-1 text-center">
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  Navegação: {tabHistoryIndex + 1}/{tabHistory.length}
-                </span>
-              </div>
-            </div>
-
             {/* Navigation Controls */}
             <div className="flex items-center space-x-1 mb-4 pb-4 border-b border-gray-200 dark:border-gray-600">
               <button

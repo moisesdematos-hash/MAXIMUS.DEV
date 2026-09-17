@@ -21,7 +21,8 @@ import {
   FolderOpen,
   Trash2,
   User,
-  Activity
+  Activity,
+  Brain
 } from 'lucide-react';
 import { useUI } from '../contexts/UIContext';
 import SettingsModal from './SettingsModal';
@@ -41,6 +42,7 @@ import VentureDashboard from './VentureDashboard';
 import { useProjects } from '../contexts/ProjectContext';
 import { useAuth } from '../contexts/AuthContext';
 import PulseMonitor from './PulseMonitor';
+import OllamaSettings from './OllamaSettings';
 
 interface TopBarProps {
   onBackToWelcome?: () => void;
@@ -65,10 +67,12 @@ const TopBar = ({ onBackToWelcome }: TopBarProps) => {
     showTimeTravel, setShowTimeTravel,
     showVentureDashboard, setShowVentureDashboard,
     showPulse, setShowPulse,
-    credits
+    credits,
+    aiProvider
   } = useUI();
 
   const [showUserMenu, setShowUserMenu] = React.useState(false);
+  const [showOllamaSettings, setShowOllamaSettings] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
   const searchInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -406,6 +410,17 @@ const TopBar = ({ onBackToWelcome }: TopBarProps) => {
               <Activity className="w-4 h-4" />
               <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
             </button>
+
+            <button 
+              onClick={() => setShowOllamaSettings(true)}
+              className={`p-1.5 ${showOllamaSettings ? 'text-purple-500 bg-purple-50' : 'text-gray-400 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20'} rounded-lg transition-all relative`}
+              title="Configurações de IA Local (Ollama)"
+            >
+              <Brain className="w-4 h-4" />
+              {aiProvider === 'ollama' && (
+                <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-purple-500 rounded-full" />
+              )}
+            </button>
           </div>
 
           <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-2" />
@@ -502,6 +517,13 @@ const TopBar = ({ onBackToWelcome }: TopBarProps) => {
         <AIAssistant 
           isOpen={showAIAssistant}
           onClose={() => setShowAIAssistant(false)}
+        />
+      )}
+
+      {showOllamaSettings && (
+        <OllamaSettings 
+          isOpen={showOllamaSettings}
+          onClose={() => setShowOllamaSettings(false)}
         />
       )}
 

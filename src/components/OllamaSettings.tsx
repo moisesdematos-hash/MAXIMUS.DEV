@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { 
   X, 
   Settings, 
-  Zap, 
   CheckCircle, 
   AlertCircle, 
   RefreshCw,
@@ -12,38 +11,13 @@ import {
   Globe,
   Download,
   Play,
-  Pause,
-  Monitor,
-  Cpu,
-  MemoryStick,
-  HardDrive,
-  Network,
-  Eye,
-  EyeOff,
-  Copy,
-  ExternalLink,
-  Terminal,
-  Code,
-  Database,
-  Shield,
-  Clock,
-  Target,
-  Sparkles,
-  Rocket
+  ExternalLink
 } from 'lucide-react';
+import { useUI } from '../contexts/UIContext';
 
 interface OllamaSettingsProps {
   isOpen: boolean;
   onClose: () => void;
-  config: {
-    endpoint: string;
-    model: string;
-    temperature: number;
-    maxTokens: number;
-  };
-  onConfigChange: (config: any) => void;
-  currentProvider: 'openai' | 'ollama';
-  onProviderChange: (provider: 'openai' | 'ollama') => void;
 }
 
 interface OllamaModel {
@@ -73,12 +47,14 @@ interface OllamaStatus {
 
 const OllamaSettings: React.FC<OllamaSettingsProps> = ({ 
   isOpen, 
-  onClose, 
-  config, 
-  onConfigChange, 
-  currentProvider, 
-  onProviderChange 
+  onClose
 }) => {
+  const { 
+    aiProvider: currentProvider, 
+    setAiProvider: onProviderChange, 
+    ollamaConfig: config, 
+    setOllamaConfig: onConfigChange 
+  } = useUI();
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'error'>('unknown');
   const [ollamaStatus, setOllamaStatus] = useState<OllamaStatus>({
@@ -121,12 +97,18 @@ const OllamaSettings: React.FC<OllamaSettingsProps> = ({
 
       if (response.ok) {
         const data = await response.json();
+        const availableModels = data.models || [];
         setOllamaStatus({
           isRunning: true,
           version: '0.1.17', // Default version
-          models: data.models || []
+          models: availableModels
         });
         setConnectionStatus('connected');
+
+        // Fix: Auto-select the first available model if current one is missing
+        if (availableModels.length > 0 && !availableModels.some((m: OllamaModel) => m.name === config.model)) {
+          onConfigChange({ ...config, model: availableModels[0].name });
+        }
       } else {
         throw new Error('Ollama not responding');
       }
@@ -210,12 +192,10 @@ const OllamaSettings: React.FC<OllamaSettingsProps> = ({
   };
 
   const handleSaveConfig = () => {
-    // Save to localStorage
-    localStorage.setItem('ollama-config', JSON.stringify(config));
-    localStorage.setItem('ai-provider', currentProvider);
-    
-    console.log('✅ Configurações Ollama salvas:', config);
-    alert(`✅ Configurações Salvas!\n\n🤖 Provider: ${currentProvider === 'ollama' ? 'Ollama Local' : 'OpenAI Cloud'}\n🔗 Endpoint: ${config.endpoint}\n🧠 Modelo: ${config.model}\n🌡️ Temperature: ${config.temperature}\n📊 Max Tokens: ${config.maxTokens}\n\n🚀 Configuração aplicada!`);
+    // Persistence is handled by UIContext useEffect
+    console.log('✅ Configurações Ollama aplicadas via Contexto:', config);
+    alert(`✅ Configurações Aplicadas!\n\n🤖 Provider: ${currentProvider === 'ollama' ? 'Ollama Local' : 'OpenAI Cloud'}\n🔗 Endpoint: ${config.endpoint}\n🧠 Modelo: ${config.model}\n🌡️ Temperature: ${config.temperature}\n📊 Max Tokens: ${config.maxTokens}\n\n🚀 Configuração sincronizada em toda a plataforma!`);
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -401,9 +381,9 @@ const OllamaSettings: React.FC<OllamaSettingsProps> = ({
                         onChange={(e) => onConfigChange({ ...config, model: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                       >
-                        {ollamaStatus.models.map((model) => (
+                        {ollamaStatus.models.map((model: OllamaModel) => (
                           <option key={model.name} value={model.name}>
-                            {model.name} ({model.size || 'Tamanho desconhecido'})
+                            {model.name} ({(Number(model.size) / 1024 / 1024 / 1024).toFixed(1)} GB)
                           </option>
                         ))}
                       </select>
@@ -484,10 +464,10 @@ const OllamaSettings: React.FC<OllamaSettingsProps> = ({
                       </div>
                       <button
                         onClick={() => handlePullModel(model.name)}
-                        disabled={ollamaStatus.models.some(m => m.name === model.name)}
+                        disabled={ollamaStatus.models.some((m: OllamaModel) => m.name === model.name)}
                         className="px-3 py-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded text-sm transition-colors flex items-center space-x-1"
                       >
-                        {ollamaStatus.models.some(m => m.name === model.name) ? (
+                        {ollamaStatus.models.some((m: OllamaModel) => m.name === model.name) ? (
                           <>
                             <CheckCircle className="w-3 h-3" />
                             <span>Instalado</span>

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useUI } from '../contexts/UIContext';
-import { Clock, Zap, MessageSquare } from 'lucide-react';
+import { Clock, Zap, MessageSquare, Activity, X } from 'lucide-react';
 
 interface ActivityFeedProps {
   isEmbedded?: boolean;
@@ -8,12 +8,25 @@ interface ActivityFeedProps {
 
 const ActivityFeed: React.FC<ActivityFeedProps> = ({ isEmbedded }) => {
   const { activities, language } = useUI();
+  const [isOpen, setIsOpen] = useState(false);
 
   if (activities.length === 0 && !isEmbedded) return null;
 
+  if (!isEmbedded && !isOpen) {
+    return (
+      <button 
+        onClick={() => setIsOpen(true)}
+        className="fixed bottom-24 right-8 z-40 p-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-full shadow-[0_0_15px_rgba(0,0,0,0.1)] dark:shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:scale-105 active:scale-95 transition-all outline-none"
+        title={language === 'pt' ? 'Histórico de Atividades' : 'Activity History'}
+      >
+        <Activity className="w-5 h-5 text-blue-500" />
+      </button>
+    );
+  }
+
   const containerClasses = isEmbedded
     ? "h-full flex flex-col bg-white dark:bg-gray-950"
-    : "fixed bottom-24 right-8 w-72 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-right duration-500 z-40";
+    : "fixed bottom-24 right-8 w-72 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-right duration-500 z-40";
 
   return (
     <div className={containerClasses}>
@@ -22,7 +35,17 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({ isEmbedded }) => {
           <Clock className="w-3 h-3 mr-2" />
           {language === 'pt' ? 'Atividade Recente' : 'Recent Activity'}
         </h3>
-        <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+        
+        {!isEmbedded ? (
+          <button 
+            onClick={() => setIsOpen(false)} 
+            className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors p-1"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        ) : (
+          <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+        )}
       </div>
       
       <div className="max-h-64 overflow-y-auto p-2 space-y-2 scrollbar-hide">

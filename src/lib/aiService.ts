@@ -28,8 +28,8 @@ Sempre responda em português, a menos que solicitado o contrário.`;
     // Mapping models to providers
     const isAnthropic = modelId.startsWith('claude');
     const isGoogle = modelId.startsWith('gemini');
-    const isOpenAI = modelId.startsWith('gpt') || modelId === 'maximus-neural';
-    const isOllama = modelId === 'llama-3' || modelId === 'mistral-large'; // Assuming local for these in this context
+    const isOpenAI = modelId.startsWith('gpt');
+    const isOllama = modelId === 'llama-3' || modelId === 'mistral-large' || modelId === 'maximus-neural';
 
     const systemPrompt = this.getSystemPrompt(modelId);
     
@@ -159,14 +159,16 @@ Sempre responda em português, a menos que solicitado o contrário.`;
   }
 
   private static async callOllama(model: string, prompt: string, history: ChatMessage[]) {
-    // Basic implementation for local Ollama
+    // Redireciona o nome fictício de nossa arquitetura para um modelo robusto local
+    const ollamaModel = model === 'maximus-neural' ? 'llama3.1:8b' : model;
+    
     const contextHistory = history.map(m => `${m.role === 'user' ? 'Usuário' : 'Assistente'}: ${m.content}`).join('\n');
     const fullPrompt = `${contextHistory}\nUsuário: ${prompt}\nAssistente:`;
 
     const response = await fetch('http://localhost:11434/api/generate', {
       method: 'POST',
       body: JSON.stringify({
-        model: model,
+        model: ollamaModel,
         prompt: fullPrompt,
         stream: false
       })

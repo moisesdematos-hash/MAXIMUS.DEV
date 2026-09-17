@@ -1,5 +1,14 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { Language } from '../lib/i18n';
+
+export type AIProvider = 'openai' | 'ollama';
+
+export interface OllamaConfig {
+  endpoint: string;
+  model: string;
+  temperature: number;
+  maxTokens: number;
+}
 
 interface UIContextType {
   showAIAssistant: boolean;
@@ -68,6 +77,10 @@ interface UIContextType {
   setChatInteractionType: (type: 'chat' | 'create' | 'claw' | 'subscription' | 'history') => void;
   openClawStatus: 'offline' | 'online' | 'busy';
   setOpenClawStatus: (status: 'offline' | 'online' | 'busy') => void;
+  aiProvider: AIProvider;
+  setAiProvider: (provider: AIProvider) => void;
+  ollamaConfig: OllamaConfig;
+  setOllamaConfig: (config: OllamaConfig) => void;
 }
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
@@ -114,6 +127,27 @@ export const UIProvider = ({ children }: { children: ReactNode }) => {
   const [credits, setCredits] = useState(1500);
   const [isPlanningActive, setIsPlanningActive] = useState(true);
   const [openClawStatus, setOpenClawStatus] = useState<'offline' | 'online' | 'busy'>('offline');
+  const [aiProvider, setAiProvider] = useState<AIProvider>(() => {
+    const saved = localStorage.getItem('ai-provider');
+    return (saved as AIProvider) || 'openai';
+  });
+  const [ollamaConfig, setOllamaConfig] = useState<OllamaConfig>(() => {
+    const saved = localStorage.getItem('ollama-config');
+    return saved ? JSON.parse(saved) : {
+      endpoint: 'http://localhost:11434',
+      model: 'llama2',
+      temperature: 0.7,
+      maxTokens: 2048
+    };
+  });
+
+  useEffect(() => {
+    localStorage.setItem('ai-provider', aiProvider);
+  }, [aiProvider]);
+
+  useEffect(() => {
+    localStorage.setItem('ollama-config', JSON.stringify(ollamaConfig));
+  }, [ollamaConfig]);
 
   const value = {
     showAIAssistant,
@@ -182,6 +216,10 @@ export const UIProvider = ({ children }: { children: ReactNode }) => {
     setChatInteractionType,
     openClawStatus,
     setOpenClawStatus,
+    aiProvider,
+    setAiProvider,
+    ollamaConfig,
+    setOllamaConfig,
   };
 
   return <UIContext.Provider value={value}>{children}</UIContext.Provider>;
