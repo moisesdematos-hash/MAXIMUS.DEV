@@ -37,6 +37,11 @@ export class MultiAgentOrchestrator {
   private blueprintAgent: BlueprintAgent;
   private securityAgent: SecurityAgent;
   private collaborationAgent: CollaborationAgent;
+  private researchAgent: ResearchAgent;
+  private databaseAgent: DatabaseAgent;
+  private grepAgent: GrepAgent;
+  private cronAgent: CronAgent;
+  private ingestionAgent: IngestionAgent;
 
   private constructor() {
     this.portabilityAgent = new GhostPortability();
@@ -53,6 +58,11 @@ export class MultiAgentOrchestrator {
     this.blueprintAgent = new BlueprintAgent();
     this.securityAgent = new SecurityAgent();
     this.collaborationAgent = collaborationAgent;
+    this.researchAgent = new ResearchAgent();
+    this.databaseAgent = new DatabaseAgent();
+    this.grepAgent = new GrepAgent();
+    this.cronAgent = new CronAgent();
+    this.ingestionAgent = new IngestionAgent();
   }
 
   public static getInstance(): MultiAgentOrchestrator {
