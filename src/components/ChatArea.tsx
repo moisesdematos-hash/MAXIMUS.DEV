@@ -22,7 +22,10 @@ import {
   Cpu,
   Github,
   Mic,
-  Folder
+  Folder,
+  Maximize2,
+  Minimize2,
+  Check
 } from 'lucide-react';
 import DependencyManager from './DependencyManager';
 import OpenClawPanel from './OpenClawPanel';
@@ -190,6 +193,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onCodeGenerated, currentCode }) => 
   ];
   const [selectedModel, setSelectedModel] = useState(models[0].id);
   const [showModelSelector, setShowModelSelector] = useState(false);
+  const [isSuperEditorOpen, setIsSuperEditorOpen] = useState(false);
   const [showTemplatesModal, setShowTemplatesModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -508,7 +512,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onCodeGenerated, currentCode }) => 
     setInputValue(e.target.value);
     const textarea = e.target;
     textarea.style.height = 'auto';
-    textarea.style.height = Math.min(textarea.scrollHeight, 240) + 'px';
+    textarea.style.height = Math.min(textarea.scrollHeight, window.innerHeight * 0.5) + 'px';
   };
 
   // Generator functions removed for brevity (orchestrated by AI system)
@@ -724,7 +728,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onCodeGenerated, currentCode }) => 
                     }
                   }}
                   placeholder={getTranslation(language, 'chat.placeholder')}
-                  className="w-full bg-transparent px-4 pt-3 pb-12 text-sm focus:outline-none transition-all resize-none min-h-[100px] max-h-64 text-gray-800 dark:text-white"
+                  className="w-full bg-transparent px-4 pt-3 pb-12 text-sm focus:outline-none transition-all resize-none min-h-[100px] max-h-[50vh] text-gray-800 dark:text-white"
                   rows={3}
                   disabled={isProcessing}
                 />
@@ -907,6 +911,76 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onCodeGenerated, currentCode }) => 
         onClose={() => setShowTemplatesModal(false)}
         onTemplateSelect={handleTemplateSelect}
       />
+
+      {/* Super Editor Modal */}
+      {isSuperEditorOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-gray-900 w-full max-w-5xl h-[85vh] rounded-3xl shadow-2xl flex flex-col border border-gray-200 dark:border-gray-800 overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
+                  <Terminal className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-none">Super Editor de Prompts</h3>
+                  <p className="text-xs text-gray-500 mt-1">Ambiente isolado para compor comandos arquiteturais complexos</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center space-x-2">
+                  <span className="text-xs font-bold text-gray-500">TOKENS ESTIMADOS:</span>
+                  <span className="text-sm font-black font-mono text-blue-600 dark:text-blue-400">{Math.ceil(inputValue.length / 4)}</span>
+                </div>
+                <button
+                  onClick={() => setIsSuperEditorOpen(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-xl transition-colors"
+                >
+                  <Minimize2 className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 p-6 bg-gray-50 dark:bg-gray-950/50">
+              <textarea
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Escreva seu super prompt aqui. Suporta Markdown, cdigo estruturado e regras arquiteturais extensas..."
+                className="w-full h-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 font-mono text-sm leading-relaxed text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all resize-none shadow-inner"
+              />
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 flex justify-between items-center">
+              <div className="text-xs text-gray-500 flex items-center space-x-4">
+                <span className="flex items-center"><Check className="w-3 h-3 mr-1 text-green-500"/> Suporte a mltiplas linhas</span>
+                <span className="flex items-center"><Check className="w-3 h-3 mr-1 text-green-500"/> Sem limite rgido de altura</span>
+                <span className="flex items-center"><Check className="w-3 h-3 mr-1 text-green-500"/> Reteno de formatao</span>
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setIsSuperEditorOpen(false)}
+                  className="px-6 py-3 rounded-xl font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 transition-all"
+                >
+                  Confirmar e Voltar
+                </button>
+                <button
+                  onClick={(e) => {
+                    setIsSuperEditorOpen(false);
+                    handleSubmit(e as any);
+                  }}
+                  disabled={!inputValue.trim()}
+                  className="px-6 py-3 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/30 transition-all flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>Enviar Super Comando</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
