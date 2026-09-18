@@ -40,7 +40,7 @@ export class GhostPortability {
     return true;
   }
 
-    public async orchestrateDeploy(env: string, code: string): Promise<{ success: boolean; url: string; error?: string }> {
+      public async orchestrateDeploy(env: string, code: string): Promise<{ success: boolean; url: string; error?: string }> {
     console.log(`🚀 Orquestrando Deploy Multi-Cloud (${env}) via API Real da Vercel...`);
     
     try {
@@ -61,7 +61,6 @@ export class GhostPortability {
 
       const vercelToken = (integration.config as any).accessToken;
 
-      // Montando estrutura de arquivos para um App Vite nativo
       const payload = {
         name: `maximus-deploy-${Math.random().toString(36).substring(7)}`,
         projectSettings: {
@@ -156,12 +155,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       console.error('Falha no deploy da Vercel:', error);
       return { success: false, url: '', error: error.message };
     }
-  } else {
-        throw new Error('Crítico: Múltiplas falhas de nuvem.');
-      }
-    }
-
-    return { success: true, url: 'https://maximus-vercel-prod.io' };
   }
 
   public async exportProject(
