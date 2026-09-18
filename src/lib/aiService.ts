@@ -175,23 +175,31 @@ DIRETRIZES FUNDAMENTAIS:
     private static async callGroq(model: string, prompt: string, history: ChatMessage[], systemPrompt: string) {
     // Attempt to use Vercel Serverless Function first for secure API key injection
     try {
+      // Build messages array exactly as api/chat.js expects
+      const formattedMessages = [
+        ...history,
+        { role: 'user', content: prompt }
+      ];
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           provider: 'groq',
           model: model,
-          prompt: prompt,
-          history: history,
+          messages: formattedMessages,
           systemPrompt: systemPrompt
         })
       });
       
       if (response.ok) {
         const data = await response.json();
-        if (data.choices && data.choices[0] && data.choices[0].message) {
-          return data.choices[0].message.content;
+        if (data.result) {
+          return data.result;
         }
+      } else {
+        const errData = await response.json();
+        console.warn("Vercel API error:", errData);
       }
     } catch (err) {
       console.warn("Serverless backend failed, falling back to local...", err);
