@@ -629,7 +629,7 @@ export default App;"
             >
               <div className="h-full">
                 {code ? (
-                  <iframe
+                  <iframe sandbox=" allow-scripts allow-forms allow-popups allow-modals\ 
                     ref={previewRef}
                     srcDoc={`
                       <!DOCTYPE html>
