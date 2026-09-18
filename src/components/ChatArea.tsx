@@ -21,7 +21,8 @@ import {
   Layout,
   Cpu,
   Github,
-  Mic
+  Mic,
+  Folder
 } from 'lucide-react';
 import DependencyManager from './DependencyManager';
 import OpenClawPanel from './OpenClawPanel';
