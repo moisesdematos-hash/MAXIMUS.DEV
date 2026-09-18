@@ -16,7 +16,6 @@ import { collaborationAgent } from './lib/collaborationAgent';
 
 const MonitoringDashboard = lazy(() => import('./components/MonitoringDashboard'));
 const AgentReasoning = lazy(() => import('./components/AgentReasoning'));
-const TemplateMarketplace = lazy(() => import('./components/TemplateMarketplace'));
 const ActivityFeed = lazy(() => import('./components/ActivityFeed'));
 const ExportModal = lazy(() => import('./components/ExportModal'));
 const SuggestionsPanel = lazy(() => import('./components/SuggestionsPanel'));
@@ -183,8 +182,7 @@ function App() {
           </div>
         )}
 
-        <TemplateMarketplace />
-        <ActivityFeed />
+                <ActivityFeed />
         <ExportModal currentCode={generatedCode} />
         <SuggestionsPanel />
         {showDesignPilot && <DesignPilot />}
