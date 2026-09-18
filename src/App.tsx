@@ -7,7 +7,6 @@ import CodeEditor from './components/CodeEditor';
 import TopBar from './components/TopBar';
 import Login from './components/Login';
 import Register from './components/Register';
-import ErrorBoundary from './components/ErrorBoundary';
 import StatusBar from './components/StatusBar';
 import { useProjects } from './contexts/ProjectContext';
 import { useAuth } from './contexts/AuthContext';
@@ -134,7 +133,7 @@ function App() {
   }
 
   return (
-    <ErrorBoundary>
+    
       <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 overflow-hidden">
       {/* Top Bar */}
       <TopBar onBackToWelcome={handleBackToWelcome} />
@@ -197,7 +196,7 @@ function App() {
       {/* System Status Feed */}
       <StatusBar />
       </div>
-    </ErrorBoundary>
+    
   );
 }
 

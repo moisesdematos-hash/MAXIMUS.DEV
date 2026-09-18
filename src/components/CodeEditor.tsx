@@ -82,6 +82,8 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { useProjects } from '../contexts/ProjectContext';
+import { useAuth } from '../contexts/AuthContext';
+import { useMultiplayer } from '../hooks/useMultiplayer';
 // No longer needed: import CodeAnalyzer from './CodeAnalyzer';
 
 interface CodeEditorProps {
@@ -91,6 +93,18 @@ interface CodeEditorProps {
 
 const CodeEditor: React.FC<CodeEditorProps> = ({ code, onCodeChange }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const { currentProject } = useProjects();
+  const { user } = useAuth();
+  
+  const { activeUsers, broadcastCodeChange } = useMultiplayer(
+    currentProject?.id || null, 
+    user, 
+    code, 
+    (newCode) => {
+      // Quando recebemos código de outra pessoa, atualizamos a tela sem reenviar
+      onCodeChange(newCode);
+    }
+  );
   const [showPreview, setShowPreview] = useState(true);
   const [viewportMode, setViewportMode] = useState<'desktop' | 'mobile'>('desktop');
   const [activeTab, setActiveTab] = useState<'code' | 'preview' | 'console'>('preview');
