@@ -1,3 +1,5 @@
+import { supabase } from './supabase';
+
 export interface CloudProvider {
   id: string;
   name: 'Vercel' | 'AWS' | 'GCP';
@@ -38,21 +40,123 @@ export class GhostPortability {
     return true;
   }
 
-  public async orchestrateDeploy(env: string, code: string): Promise<{ success: boolean; url: string }> {
-    const primary = this.providers.find(p => p.name === 'Vercel')!;
-    const backup = this.providers.find(p => p.name === 'AWS')!;
+    public async orchestrateDeploy(env: string, code: string): Promise<{ success: boolean; url: string; error?: string }> {
+    console.log(`🚀 Orquestrando Deploy Multi-Cloud (${env}) via API Real da Vercel...`);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado.');
 
-    console.log(`🛡️ Orquestrando Deploy Multi-Cloud (${env})...`);
-    
-    let success = await this.deploy(code, { projectId: 'max-1', env, provider: primary });
-    
-    if (!success) {
-      console.warn('⚠️ Failover: Ativando AWS...');
-      success = await this.deploy(code, { projectId: 'max-1', env, provider: backup });
-      
-      if (success) {
-        return { success: true, url: 'https://maximus-aws-backup.io' };
-      } else {
+      const { data: integration } = await supabase
+        .from('user_integrations')
+        .select('config')
+        .eq('user_id', user.id)
+        .eq('service_id', 'vercel')
+        .eq('status', 'connected')
+        .single();
+
+      if (!integration || !integration.config || !(integration.config as any).accessToken) {
+        throw new Error('Token da Vercel não encontrado. Vá em "Conectar Serviços" e adicione seu token.');
+      }
+
+      const vercelToken = (integration.config as any).accessToken;
+
+      // Montando estrutura de arquivos para um App Vite nativo
+      const payload = {
+        name: `maximus-deploy-${Math.random().toString(36).substring(7)}`,
+        projectSettings: {
+          framework: 'vite'
+        },
+        files: [
+          {
+            file: 'package.json',
+            data: JSON.stringify({
+              name: 'maximus-app',
+              private: true,
+              version: '0.0.0',
+              type: 'module',
+              scripts: { dev: 'vite', build: 'tsc && vite build', preview: 'vite preview' },
+              dependencies: {
+                react: '^18.2.0',
+                'react-dom': '^18.2.0',
+                'lucide-react': 'latest'
+              },
+              devDependencies: {
+                '@types/react': '^18.2.66',
+                '@types/react-dom': '^18.2.22',
+                '@vitejs/plugin-react': '^4.2.1',
+                typescript: '^5.2.2',
+                vite: '^5.2.0',
+                tailwindcss: '^3.4.1'
+              }
+            }, null, 2)
+          },
+          {
+            file: 'index.html',
+            data: `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Maximus App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>`
+          },
+          {
+            file: 'vite.config.ts',
+            data: `import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()]
+})`
+          },
+          {
+            file: 'src/main.tsx',
+            data: `import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.tsx'
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)`
+          },
+          {
+            file: 'src/App.tsx',
+            data: code
+          }
+        ]
+      };
+
+      const response = await fetch('https://api.vercel.com/v13/deployments', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${vercelToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(`Erro na API Vercel: ${errData.error?.message || response.statusText}`);
+      }
+
+      const data = await response.json();
+      return { success: true, url: `https://${data.url}` };
+
+    } catch (error: any) {
+      console.error('Falha no deploy da Vercel:', error);
+      return { success: false, url: '', error: error.message };
+    }
+  } else {
         throw new Error('Crítico: Múltiplas falhas de nuvem.');
       }
     }

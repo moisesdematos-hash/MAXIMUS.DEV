@@ -8,9 +8,12 @@
   }
 
   .line-numbers {
-    @apply bg-gray-950 text-gray-600 px-4 py-4 text-right font-mono text-sm select-none border-r-2 border-blue-600 overflow-hidden transition-all duration-300 relative;
+    @apply bg-gray-100 text-gray-400 dark:bg-gray-950 dark:text-gray-600 px-4 py-4 text-right font-mono text-sm select-none border-r-2 border-gray-200 dark:border-blue-600 overflow-hidden transition-all duration-300 relative;
     line-height: 1.5;
     min-width: 4rem;
+  }
+  
+  .dark .line-numbers {
     background: linear-gradient(180deg, rgba(3, 7, 18, 0.9) 0%, rgba(3, 7, 18, 0.95) 100%);
     box-shadow: inset -4px 0 8px rgba(59, 130, 246, 0.1);
   }
@@ -96,12 +99,15 @@
   }
 
   .code-input-container {
-    @apply flex-1 overflow-hidden relative;
+    @apply flex-1 overflow-hidden relative bg-white dark:bg-transparent;
+  }
+
+  .dark .code-input-container {
     background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
   }
 
   .code-grid-background {
-    @apply absolute inset-0 pointer-events-none;
+    @apply absolute inset-0 pointer-events-none opacity-50 dark:opacity-100;
     background-image:
       linear-gradient(90deg, rgba(59, 130, 246, 0.15) 1px, transparent 1px),
       linear-gradient(0deg, rgba(59, 130, 246, 0.18) 1px, transparent 1px),
@@ -144,14 +150,17 @@
   }
 
   .code-editor-input {
-    @apply relative z-10 w-full h-full p-4 font-mono text-sm border-none resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset overflow-auto;
+    @apply relative z-10 w-full h-full p-4 font-mono text-sm border-none resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset overflow-auto text-gray-800 dark:text-emerald-400;
     line-height: 1.6;
     tab-size: 2;
     background: transparent;
-    color: #10b981;
-    text-shadow: 0 0 4px rgba(16, 185, 129, 0.3);
     caret-color: #3b82f6;
     letter-spacing: 0.02em;
+  }
+
+  .dark .code-editor-input {
+    color: #10b981;
+    text-shadow: 0 0 4px rgba(16, 185, 129, 0.3);
   }
 
   .code-editor-input::placeholder {

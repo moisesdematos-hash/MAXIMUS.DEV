@@ -1,5 +1,10 @@
 /// <reference types="react" />
 import React, { useState, useRef, useEffect } from 'react';
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
+import mermaid from 'mermaid';
+
+
 import { 
   Send, 
   Paperclip, 
@@ -40,6 +45,25 @@ const ProcessingTimer = () => {
   }, []);
   return <span className="text-xs font-bold font-mono tracking-widest">{seconds}s</span>;
 };
+
+// Configurar Marked para renderizar blocos mermaid como divs compatíveis
+const renderer = new marked.Renderer();
+const originalCode = renderer.code.bind(renderer);
+renderer.code = (code, language, isEscaped) => {
+  if (language === 'mermaid') {
+    return `<div class="mermaid">${code}</div>`;
+  }
+  if (typeof code === 'object' && code.lang === 'mermaid') {
+      return `<div class="mermaid">${code.text}</div>`;
+  }
+  if (typeof originalCode === 'function' && typeof code !== 'object') {
+     return originalCode(code, language, isEscaped);
+  }
+  return `<pre><code class="language-${language || code.lang}">${typeof code === 'object' ? code.text : code}</code></pre>`;
+};
+marked.use({ renderer });
+
+mermaid.initialize({ startOnLoad: false, theme: 'dark' });
 
 interface Message {
   id: string;
@@ -104,20 +128,64 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onCodeGenerated, currentCode }) => 
     }
   ]);
   const [inputValue, setInputValue] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("API de reconhecimento de voz não suportada neste navegador (use Chrome ou Edge).");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+    recognition.lang = 'pt-BR';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    const originalInput = inputValue;
+
+    recognition.onresult = (event: any) => {
+      let currentTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        currentTranscript += event.results[i][0].transcript;
+      }
+      setInputValue(originalInput + (originalInput ? ' ' : '') + currentTranscript);
+    };
+
+    recognition.onerror = (e: any) => {
+      console.warn("Erro no microfone:", e);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognition.start();
+    setIsListening(true);
+  };
   const [isProcessing, setIsProcessing] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [showDependencyManager, setShowDependencyManager] = useState(false);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   
   const models = [
+    { id: 'maximus-neural', name: 'MAXIMUS Neural', provider: 'Native', color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20', isNative: true },
     { id: 'gpt-4o', name: 'GPT-4o', provider: 'OpenAI', color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20' },
     { id: 'claude-3-5', name: 'Claude 3.5', provider: 'Anthropic', color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20' },
     { id: 'claude-4-6', name: 'Claude 4.6 Opus', provider: 'Anthropic', color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20' },
     { id: 'gemini-1-5', name: 'Gemini 1.5', provider: 'Google', color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
     { id: 'gemini-pro', name: 'Gemini Pro', provider: 'Google', color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/20' },
     { id: 'llama-3', name: 'Llama 3', provider: 'Meta', color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
-    { id: 'mistral-large', name: 'Mistral', provider: 'Mistral', color: 'text-rose-600', bg: 'bg-rose-50 dark:bg-rose-900/20' },
-    { id: 'maximus-neural', name: 'MAXIMUS Neural (Local)', provider: 'Native', color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20', isNative: true }
+    { id: 'mistral-large', name: 'Mistral', provider: 'Mistral', color: 'text-rose-600', bg: 'bg-rose-50 dark:bg-rose-900/20' }
   ];
   const [selectedModel, setSelectedModel] = useState(models[0].id);
   const [showModelSelector, setShowModelSelector] = useState(false);
@@ -160,6 +228,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onCodeGenerated, currentCode }) => 
   }, [currentProject?.id]);
 
   useEffect(scrollToBottom, [messages]);
+
+  // Renderizar os diagramas Mermaid na tela
+  useEffect(() => {
+    try {
+      mermaid.run({ querySelector: '.mermaid' }).catch(e => console.warn('Mermaid render error:', e));
+    } catch (e) {
+      console.warn('Mermaid sync render error:', e);
+    }
+  }, [messages]);
 
   const handleSendMessage = async (userMessage: string) => {
     setIsProcessing(true);
@@ -265,13 +342,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onCodeGenerated, currentCode }) => 
 
       // Limpar o bloco de código gigante do chat para não duplicar visualmente
       let displayResponse = fullResponse;
-      if (extractedCode) {
-        displayResponse = fullResponse.replace(/```(?:\w+)?\n([\s\S]*?)(?:```|$)/i, '\n\n✨ **Código renderizado com sucesso no Editor ao lado!** 🚀\n\n').trim();
-        // Fallback cleanup
-        if (displayResponse.includes('export default function')) {
-          displayResponse = '✨ **Interface gerada com sucesso no Editor ao lado!** 🚀';
-        }
-      }
+      // Removida a substituição do bloco de código para que o chat exiba o markdown como o Antigravity
 
       if (user && currentProject?.id) {
         await MessageService.saveMessage({
@@ -342,22 +413,26 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onCodeGenerated, currentCode }) => 
         setVulnerabilities(result.security || []);
       }
 
-      let finalContent = `✅ **Feature processada com sucesso!**\n\n` +
+      let finalContent = `🚀 **Feature processada com sucesso!**\n\n` +
         `🛡️ **Segurança**: ${result.security.length} vulnerabilidades encontradas.\n` +
         `🎨 **UI/Frontend**: Gerado.\n` +
         `⚙️ **API/Backend**: Gerado.\n` +
         `🧪 **Testes**: ${result.tests.success ? 'Gerados com sucesso' : 'Falha na geração'}.\n` +
         `⚡ **Performance**: ${result.performance.suggestions.length} sugestões de otimização.\n` +
-        `📝 **Doc**: README e JSDoc gerados.\n\n` +
-        `📦 **Créditos Economizados**: ${result.credits.savings}`;
+        `📄 **Doc**: README e JSDoc gerados.\n\n` +
+        `💰 **Créditos Economizados**: ${result.credits.savings}`;
 
       if (result.performance?.suggestions && result.performance.suggestions.length > 0) {
-        finalContent += `\n\n🚀 **Ações de Performance Realizadas**:\n${result.performance.suggestions.map((s: string) => `- ${s}`).join('\n')}`;
+        finalContent += `\n\n✨ **Ações de Performance Realizadas**:\n${result.performance.suggestions.map((s: string) => `- ${s}`).join('\n')}`;
       }
 
       if (result.discussion && result.discussion.length > 0) {
-        finalContent += `\n\n💬 **Discussão entre Agentes (Backstage)**:\n` +
+        finalContent += `\n\n💭 **Discussão entre Agentes (Backstage)**:\n` +
           result.discussion.map((d: { agent: string; thought: string }) => `> **${d.agent}**: ${d.thought}`).join('\n');
+      }
+
+      if (result.frontend && result.frontend.code) {
+        finalContent += `\n\n### Código Gerado\n\n\`\`\`tsx\n${result.frontend.code}\n\`\`\`\n`;
       }
 
       setMessages((prev: Message[]) => prev.map((msg: Message) =>
@@ -543,12 +618,16 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onCodeGenerated, currentCode }) => 
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white mr-4'
                       }`}
                     >
-                      <p className="whitespace-pre-wrap">
-                        {message.content}
-                        {message.isStreaming && (
-                          <span className="inline-block w-2 h-5 bg-current ml-1 animate-pulse" />
-                        )}
-                      </p>
+                      <div className={`prose prose-sm max-w-none ${message.type === 'ai' ? 'dark:prose-invert' : 'text-white'}`}>
+                          {message.type === 'user' ? (
+                             <p className="whitespace-pre-wrap">{message.content}</p>
+                          ) : (
+                             <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(message.content || '') as string) }} />
+                          )}
+                          {message.isStreaming && (
+                            <span className="inline-block w-2 h-5 bg-current ml-1 animate-pulse" />
+                          )}
+                      </div>
                     </div>
                     <p className={`text-xs text-gray-500 mt-1 ${
                       message.type === 'user' ? 'text-right mr-4' : 'text-left ml-4'
@@ -615,6 +694,24 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onCodeGenerated, currentCode }) => 
 
               {/* Unified Input Box */}
               <div className="relative border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 shadow-sm group focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
+                {/* Attachments Display */}
+                {attachedFiles.length > 0 && (
+                  <div className="flex flex-wrap gap-2 px-4 pt-3">
+                    {attachedFiles.map((file, i) => (
+                      <div key={i} className="flex items-center space-x-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-md text-xs border border-blue-200 dark:border-blue-800">
+                        <span className="truncate max-w-[120px]">{file.name}</span>
+                        <button 
+                          type="button" 
+                          onClick={() => setAttachedFiles(prev => prev.filter((_, index) => index !== i))}
+                          className="hover:text-red-500"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
                 <textarea
                   ref={textareaRef}
                   value={inputValue}
@@ -687,18 +784,39 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onCodeGenerated, currentCode }) => 
                       type="file" 
                       id="file-upload" 
                       multiple 
+                      accept="image/*,application/pdf,.txt,.js,.ts,.jsx,.tsx,.json,.md,.csv"
                       className="hidden" 
                       onChange={(e) => {
-                        if (e.target.files) setAttachedFiles(Array.from(e.target.files));
+                        if (e.target.files) setAttachedFiles(prev => [...prev, ...Array.from(e.target.files!)]);
                       }}
                     />
                     
                     <label 
                       htmlFor="file-upload"
-                      className="btn-icon-sm text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                      title="Anexar arquivos"
+                      className="btn-icon-sm text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer"
+                      title="Anexar arquivos (Imagens, PDFs, Docs)"
                     >
                       <Paperclip className="w-3.5 h-3.5" />
+                    </label>
+
+                    <input 
+                      type="file" 
+                      id="folder-upload" 
+                      webkitdirectory="" 
+                      directory="" 
+                      multiple 
+                      className="hidden" 
+                      onChange={(e) => {
+                        if (e.target.files) setAttachedFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+                      }}
+                    />
+                    
+                    <label 
+                      htmlFor="folder-upload"
+                      className="btn-icon-sm text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer"
+                      title="Anexar Pasta Inteira"
+                    >
+                      <Folder className="w-3.5 h-3.5" />
                     </label>
 
                     <button
@@ -710,13 +828,18 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onCodeGenerated, currentCode }) => 
                       <Github className="w-3.5 h-3.5" />
                     </button>
 
-                    <button
-                      type="button"
-                      className="btn-icon-sm text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                      title="Entrada por Voz"
-                    >
-                      <Mic className="w-3.5 h-3.5" />
-                    </button>
+                                          <button
+                        type="button"
+                        onClick={toggleListening}
+                        className={`btn-icon-sm transition-all duration-300 ${
+                          isListening 
+                            ? 'text-red-500 bg-red-50 dark:bg-red-900/30 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]' 
+                            : 'text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30'
+                        }`}
+                        title="Entrada por Voz (Speech-to-Text)"
+                      >
+                        <Mic className="w-3.5 h-3.5" />
+                      </button>
 
                     <button
                       type="button"

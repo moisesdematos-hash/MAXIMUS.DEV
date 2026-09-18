@@ -2,8 +2,14 @@ import React, { useState } from 'react';
 import { X, Cloud, Download, Server, Github, Zap, CheckCircle2, ChevronRight, Share2 } from 'lucide-react';
 import { useUI } from '../contexts/UIContext';
 import { useMultiAgent } from '../hooks/useMultiAgent';
+import { supabase } from '../lib/supabase';
+import { useProjects } from '../contexts/ProjectContext';
 
-const ExportModal: React.FC = () => {
+interface ExportModalProps {
+  currentCode?: string;
+}
+
+const ExportModal: React.FC<ExportModalProps> = ({ currentCode = '' }) => {
   const { showExportModal, setShowExportModal, language } = useUI();
   const { orchestrateDeploy, logAction } = useMultiAgent(); // Reusing deploy logic for simulation
   const [isExporting, setIsExporting] = useState(false);
@@ -12,13 +18,22 @@ const ExportModal: React.FC = () => {
 
   if (!showExportModal) return null;
 
-  const handleExport = async (target: 'vercel' | 'docker' | 'zip') => {
+  const handleExport = async (target: 'native' | 'vercel' | 'docker' | 'zip') => {
     setSelectedTarget(target);
     setIsExporting(true);
     logAction('agent-devops', `Iniciando exportação universal para ${target.toUpperCase()}...`);
     
-    // Simulação de empacotamento
-    await new Promise(resolve => setTimeout(resolve, 4000));
+    // Conectar ao fluxo real de deploy
+    if (target === 'vercel') {
+      try {
+        await orchestrateDeploy(currentCode);
+      } catch (err) {
+        console.error(err);
+      }
+    } else {
+      // Simulação para os outros (docker/zip) se não implementados no agente
+      await new Promise(resolve => setTimeout(resolve, 4000));
+    }
     
     setIsExporting(false);
     setExportComplete(true);

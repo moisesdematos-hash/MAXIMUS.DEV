@@ -1,6 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import WelcomePage from './components/WelcomePage';
 import Sidebar from './components/Sidebar';
+import PublishedApp from './components/PublishedApp';
 import ChatArea from './components/ChatArea';
 import CodeEditor from './components/CodeEditor';
 import TopBar from './components/TopBar';
@@ -26,8 +27,25 @@ const VentureDashboard = lazy(() => import('./components/VentureDashboard'));
 const CommunityArea = lazy(() => import('./components/CommunityArea'));
 
 function App() {
+  const [publishedAppId, setPublishedAppId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path.startsWith('/app/')) {
+      setPublishedAppId(path.split('/app/')[1]);
+    }
+  }, []);
+
   const { currentProject } = useProjects();
   const { user, loading } = useAuth();
+
+  if (publishedAppId) {
+    return (
+      <Suspense fallback={<div className="w-screen h-screen flex items-center justify-center bg-gray-900"><Loader className="w-10 h-10 animate-spin text-blue-500"/></div>}>
+        <PublishedApp projectId={publishedAppId} />
+      </Suspense>
+    );
+  }
   const { 
     showMonitoringDashboard, 
     setShowMonitoringDashboard,
@@ -168,11 +186,11 @@ function App() {
 
         <TemplateMarketplace />
         <ActivityFeed />
-        <ExportModal />
+        <ExportModal currentCode={generatedCode} />
         <SuggestionsPanel />
         {showDesignPilot && <DesignPilot />}
         <TimeScrubber />
-        {showVentureDashboard && <VentureDashboard />}
+        {showVentureDashboard && <VentureDashboard currentCode={generatedCode} />}
         {showCommunity && <CommunityArea />}
       </Suspense>
 

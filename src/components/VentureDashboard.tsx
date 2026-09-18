@@ -3,7 +3,11 @@ import { Rocket, Target, DollarSign, Users, Megaphone, Globe, CheckCircle2, Tren
 import { useUI } from '../contexts/UIContext';
 import { VentureAgent, VentureStrategy } from '../lib/ventureAgent';
 
-const VentureDashboard: React.FC = () => {
+interface VentureDashboardProps {
+  currentCode?: string;
+}
+
+const VentureDashboard: React.FC<VentureDashboardProps> = ({ currentCode = '' }) => {
   const { language, showVentureDashboard, setShowVentureDashboard } = useUI();
   // Language used for translation context (future expansion)
   console.log(`[Venture] Language context: ${language}`);
@@ -16,19 +20,19 @@ const VentureDashboard: React.FC = () => {
   useEffect(() => {
     const loadStrategy = async () => {
       const agent = VentureAgent.getInstance();
-      const res = await agent.analyzeVenture('// Maximus.DEV Codebase Source');
+      const res = await agent.analyzeVenture(currentCode || '// Maximus.DEV Codebase Source');
       setStrategy(res);
       setIsAnalyzing(false);
     };
     if (showVentureDashboard) loadStrategy();
-  }, [showVentureDashboard]);
+  }, [showVentureDashboard, currentCode]);
 
   const handleLaunch = async () => {
     if (isDeploying || !strategy) return;
     setIsDeploying(true);
 
     const porter = new (await import('../lib/ghostPortability')).GhostPortability();
-    const config = await porter.exportProject('vercel', '// Maximus.DEV Codebase Source', { 
+    const config = await porter.exportProject('vercel', currentCode || '// Maximus.DEV Codebase Source', { 
       name: 'Maximus-Neural-App', 
       id: Math.random().toString(36).substr(2, 5) 
     });

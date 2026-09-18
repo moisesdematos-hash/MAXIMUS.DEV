@@ -46,6 +46,10 @@ interface Integration {
 const IntegrationsModal: React.FC<IntegrationsModalProps> = ({ isOpen, onClose, projectId }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isConnecting, setIsConnecting] = useState<string>('');
+  const [configuring, setConfiguring] = useState<string | null>(null);
+  const [supaToken, setSupaToken] = useState('');
+  const [supaString, setSupaString] = useState('');
+  const [vercelToken, setVercelToken] = useState('');
   const [categoryHistory, setCategoryHistory] = useState<string[]>(['all']);
   const [categoryHistoryIndex, setCategoryHistoryIndex] = useState(0);
 
@@ -224,7 +228,11 @@ const IntegrationsModal: React.FC<IntegrationsModalProps> = ({ isOpen, onClose, 
     ? integrations 
     : integrations.filter(integration => integration.category === selectedCategory);
 
-  const handleConnect = async (integrationId: string, mode: 'manual' | 'automatic' = 'manual') => {
+  const handleConnect = async (integrationId: string, mode: 'manual' | 'automatic' = 'manual', configData?: any) => {
+    if ((integrationId === 'supabase' || integrationId === 'vercel') && mode === 'manual' && !configData) {
+      setConfiguring(integrationId);
+      return;
+    }
     setIsConnecting(integrationId);
     
     const integration = integrations.find(i => i.id === integrationId);

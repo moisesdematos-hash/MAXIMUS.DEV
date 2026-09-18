@@ -1,3 +1,8 @@
+import { ResearchAgent } from './agents/researchAgent';
+import { DatabaseAgent } from './agents/databaseAgent';
+import { GrepAgent } from './agents/grepAgent';
+import { CronAgent } from './agents/cronAgent';
+import { IngestionAgent } from './agents/ingestionAgent';
 import { supabase } from './supabase';
 import { logError } from './errorLogger';
 import { SecurityAuditEngine } from './securityAudit';
@@ -87,39 +92,105 @@ export class MultiAgentOrchestrator {
     discussion.push({ agent: 'Context', thought: contextSummary.reasoning || 'Contexto inicializado.' });
     const dnaPrompt = this.userDna.getDnaAsPrompt();
     
+    // Extrair o código base e a solicitação limpa (pois o ChatArea injeta tudo no prompt)
+    const codeMatch = prompt.match(/Contexto atual do código:\n([\s\S]*?)\n\nSolicitação do usuário:/i);
+    const codebase = codeMatch ? codeMatch[1] : '';
+    const userRequestMatch = prompt.match(/Solicitação do usuário:\s*([\s\S]*)/i);
+    const userRequest = userRequestMatch ? userRequestMatch[1] : prompt;
+
+    // 0.3. Agendamento em Background (Cron Jobs)
+    const scheduleInfo = this.cronAgent.extractSchedule(userRequest);
+    if (scheduleInfo) {
+      this.logAgentAction('agent-context', `⏳ Detectei um agendamento: "${scheduleInfo.action}" a cada ${scheduleInfo.intervalMs}ms`);
+      
+      const taskId = this.cronAgent.scheduleTask(scheduleInfo.action, scheduleInfo.intervalMs, async (actionToRun) => {
+        // Quando o cron disparar no background, ele faz uma pesquisa web automática sobre a ação
+        const backgroundContext = await this.researchAgent.searchWeb(actionToRun);
+        console.log(`[Cron Background Result]: Executou a pesquisa agendada e encontrou dados novos!`);
+      });
+
+      discussion.push({ 
+        agent: 'System', 
+        thought: `Agendei a tarefa [${taskId}] para rodar no background a cada ${scheduleInfo.intervalMs/1000}s. Você pode continuar trabalhando enquanto eu monitoro isso.` 
+      });
+      
+      // Se a requisição for APENAS um agendamento, podemos pular a geração pesada.
+      // Mas vamos continuar para gerar a resposta inicial.
+    }
+
+    // 0.3.5 Ingestão de Fontes Externas (GitHub & PDFs)
+    const ingestedContext = await this.ingestionAgent.ingestExternalSources(userRequest);
+    if (ingestedContext) {
+      this.logAgentAction('agent-context', '📚 Ingeri dados de URLs externas (GitHub/PDF) com sucesso.');
+      discussion.push({ agent: 'Context', thought: 'Analisei os links externos fornecidos e absorvi o conteúdo no meu contexto.' });
+    }
+
+    // 0.4. Deep Code Search (Grep)
+    let grepContext = '';
+    const searchQuery = this.grepAgent.extractSearchQuery(userRequest);
+    if (searchQuery && codebase) {
+      this.logAgentAction('agent-context', `Rodando Busca Profunda (Grep) por "${searchQuery}"...`);
+      grepContext = this.grepAgent.searchCodebase(searchQuery, codebase);
+      if (grepContext) {
+        discussion.push({ agent: 'Grep', thought: `Fiz uma varredura profunda no código por "${searchQuery}".` });
+      }
+    }
+
+    // 0.5. Web Research
+    this.logAgentAction('agent-research', 'Varrendo a internet por informações atualizadas...');
+    const webContext = await this.researchAgent.searchWeb(userRequest);
+    if (webContext) {
+      discussion.push({ agent: 'Research', thought: 'Encontrei dados recentes na web e os injetei no contexto.' });
+    }
+    
     const augmentedPrompt = `
       CONTEXTO DO PROJETO: ${contextSummary.summary}
       ${integrationsContext}
       ${dnaPrompt}
-      USUÁRIO SOLICITA: ${prompt}
+      ${grepContext}
+      ${webContext}
+      ${ingestedContext}
+      CÓDIGO ATUAL:
+      ${codebase}
+      
+      USUÁRIO SOLICITA: ${userRequest}
     `;
 
-    // 1. Backend Generation
-    this.logAgentAction('agent-backend', 'Estruturando API e esquemas de dados...');
-    const backendResult = await this.backendAgent.generateAPI(augmentedPrompt, modelId);
-    discussion.push({ agent: 'Backend', thought: backendResult.reasoning || 'API estruturada.' });
+    // 1 & 2. Geração Paralela (Frontend e Backend)
+    this.logAgentAction('agent-core', '🧠 ORQUESTRAÇÃO PARALELA: Disparando Frontend e Backend simultaneamente...');
     
-    // 2. Frontend Generation
-    this.logAgentAction('agent-frontend', 'Gerando interface React e componentes UI...');
-    const frontendResult = await this.frontendAgent.generateUI(prompt, modelId);
-    discussion.push({ agent: 'Frontend', thought: frontendResult.reasoning || 'Componente UI gerado.' });
+    const [backendResult, frontendResult] = await Promise.all([
+      this.backendAgent.generateAPI(augmentedPrompt, modelId),
+      this.frontendAgent.generateUI(prompt, modelId)
+    ]);
+
+    let backendThought = backendResult.reasoning || 'API estruturada de forma autônoma.';
     
-    // 3. Security Audit (Deep Scan)
-    this.logAgentAction('agent-security', 'Realizando Varredura Neural de vulnerabilidades...');
-    const securityResult = await this.securityAgent.conductDeepScan(frontendResult.code || '');
+    // 1.5. Database Execution (Phase 3) - Ocorre logo após o backend terminar
+    if (backendResult.code && backendResult.code.toLowerCase().includes('create table')) {
+      this.logAgentAction('agent-database', 'Detectei DDL de banco de dados. Tentando aplicar migrações no Supabase...');
+      const dbResult = await this.databaseAgent.executeSQL(backendResult.code);
+      backendThought += ` \n\n[Database Agent]: ${dbResult.message}`;
+    }
+    
+    discussion.push({ agent: 'Backend', thought: backendThought });
+    discussion.push({ agent: 'Frontend', thought: frontendResult.reasoning || 'Interface e Componentes construídos com sucesso.' });
+    
+    // 3, 4, 5 & 6. Qualidade, Segurança e Testes (Delegação Paralela Maciça)
+    this.logAgentAction('agent-qa', '🛡️ DELEGAÇÃO PARALELA: Invocando [Security, Testing, Performance, Docs] simultaneamente...');
+    
+    const codeToAnalyze = frontendResult.code || '';
+    const [securityResult, testResult, perfResult, docResult] = await Promise.all([
+      this.securityAgent.conductDeepScan(codeToAnalyze),
+      this.testingAgent.generateTests(codeToAnalyze),
+      this.performanceAgent.analyzePerformance(codeToAnalyze),
+      this.docAgent.generateDocumentation(codeToAnalyze)
+    ]);
+
     discussion.push({ agent: 'Security', thought: securityResult.reasoning });
-    
-    // 4. Testing
-    const testResult = await this.testingAgent.generateTests(frontendResult.code || '');
-    discussion.push({ agent: 'Testing', thought: testResult.reasoning || 'Suíte de testes criada.' });
-
-    // 5. Performance
-    const perfResult = await this.performanceAgent.analyzePerformance(frontendResult.code || '');
-    discussion.push({ agent: 'Performance', thought: perfResult.reasoning || 'Otimizações sugeridas.' });
-
-    // 6. Documentation
-    const docResult = await this.docAgent.generateDocumentation(frontendResult.code || '');
-    discussion.push({ agent: 'Doc', thought: docResult.reasoning || 'README e JSDoc gerados.' });
+    discussion.push({ agent: 'Testing', thought: testResult.reasoning || 'Testes unitários construídos em paralelo.' });
+    discussion.push({ agent: 'Performance', thought: perfResult.reasoning || 'Métricas de otimização analisadas em paralelo.' });
+    discussion.push({ agent: 'Doc', thought: docResult.reasoning || 'Documentação gerada paralelamente.' });
 
     const totalCredits = 25; // Base cost for full orchestration
     this.creditManager.consumeCredits(totalCredits);

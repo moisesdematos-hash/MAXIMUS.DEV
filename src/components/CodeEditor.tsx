@@ -535,8 +535,8 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ code, onCodeChange }) => {
             {/* Code Editor Area */}
             <div className="flex-1 flex flex-col overflow-hidden">
               {/* Status Bar */}
-              <div className="bg-gray-900 border-b border-blue-600 px-4 py-2 flex items-center justify-between text-xs font-mono">
-                <div className="flex items-center space-x-6 text-gray-400">
+              <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-blue-600 px-4 py-2 flex items-center justify-between text-xs font-mono">
+                <div className="flex items-center space-x-6 text-gray-500 dark:text-gray-400">
                   <div className="flex items-center space-x-2">
                     <span className="text-blue-400 font-semibold">Ln</span>
                     <span className="text-emerald-400 font-bold">{cursorLine}</span>
@@ -697,11 +697,11 @@ export default App;"
             </div>
           </div>
         ) : (
-          <div className="h-full bg-gray-900 text-green-400 p-4 font-mono text-sm overflow-y-auto">
+          <div className="h-full bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-green-400 p-4 font-mono text-sm overflow-y-auto">
             <div className="space-y-1">
               {consoleOutput.map((line, index) => (
                 <div key={index} className="flex items-start space-x-2">
-                  <span className="text-gray-500 text-xs mt-0.5">
+                  <span className="text-gray-400 dark:text-gray-500 text-xs mt-0.5">
                     {new Date().toLocaleTimeString()}
                   </span>
                   <span>{line}</span>
@@ -710,12 +710,12 @@ export default App;"
             </div>
             
             {/* Console Input */}
-            <div className="flex items-center space-x-2 mt-4 pt-4 border-t border-gray-700">
-              <span className="text-blue-400">$</span>
+            <div className="flex items-center space-x-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <span className="text-blue-500 dark:text-blue-400">$</span>
               <input
                 type="text"
                 placeholder="Digite um comando..."
-                className="flex-1 bg-transparent text-green-400 focus:outline-none"
+                className="flex-1 bg-transparent text-gray-800 dark:text-green-400 focus:outline-none placeholder-gray-400 dark:placeholder-gray-600"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     const command = e.currentTarget.value;

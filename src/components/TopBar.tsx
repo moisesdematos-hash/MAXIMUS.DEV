@@ -125,364 +125,192 @@ const TopBar = ({ onBackToWelcome }: TopBarProps) => {
 
   return (
     <>
-      <div className="fixed top-0 left-0 right-0 h-12 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 z-50 flex items-center justify-between px-4 transition-all duration-300">
-        {/* Left Section */}
-        <div className="flex items-center space-x-4">
+            <div className="fixed top-0 left-0 right-0 h-14 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 z-50 flex items-center justify-between px-4 transition-all duration-300">
+        
+        {/* Left Section - Logo & Project */}
+        <div className="flex items-center space-x-3 min-w-fit">
           {/* Logo */}
-          <div className="flex items-center space-x-2 cursor-pointer" onClick={onBackToWelcome}>
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+          <div className="flex items-center space-x-2 cursor-pointer group" onClick={onBackToWelcome}>
+            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center shadow-md group-hover:shadow-blue-500/20 transition-all">
               <Zap className="w-4 h-4 text-white" />
             </div>
-            <span className="font-bold text-gray-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-              MAXIMUS.DEV
+            <span className="font-black text-gray-800 dark:text-white hidden sm:block">
+              MAXIMUS
             </span>
           </div>
 
-          {/* Navigation */}
-          <nav className="hidden md:flex items-center space-x-1">
-            <button
-              onClick={() => setShowTemplates(true)}
-              className="px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-blue-900/20 rounded-md transition-colors"
-            >
+          <div className="h-5 w-px bg-gray-200 dark:bg-gray-800 hidden sm:block mx-1" />
+
+          {/* Project Details & Management */}
+          <div className="relative group/menu flex-shrink-0">
+            <button className="flex items-center space-x-2 px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800/80 rounded-lg transition-colors border border-transparent hover:border-gray-200 dark:hover:border-gray-700">
+              <div className="flex flex-col items-start leading-none min-w-0">
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs font-bold text-gray-800 dark:text-white truncate max-w-[150px]">
+                    {currentProject?.name || 'Nenhum Projeto Ativo'}
+                  </span>
+                  <div className={`w-1.5 h-1.5 rounded-full ${currentProject ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse' : 'bg-gray-400'}`} />
+                </div>
+                <span className="text-[9px] text-gray-500 font-medium uppercase tracking-wider mt-0.5">
+                  {currentProject ? `${currentProject.type}` : 'Selecione ou crie'}
+                </span>
+              </div>
+              <MoreVertical className="w-4 h-4 text-gray-400" />
+            </button>
+            
+            {/* Project Actions Dropdown */}
+            <div className="absolute top-full left-0 mt-1 w-64 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-[60]">
+               <div className="px-2 pb-1 mb-1 border-b border-gray-100 dark:border-gray-800">
+                 <button onClick={() => { if (!currentProject) return; const newName = prompt('Novo nome do projeto:', currentProject.name); if (newName) updateProject(currentProject.id, { name: newName }); }} className="flex items-center space-x-3 w-full px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors group/item">
+                   <Edit2 className="w-4 h-4 text-blue-500 group-hover/item:scale-110 transition-transform" />
+                   <div className="flex flex-col items-start">
+                     <span>Renomear Projeto</span>
+                     <span className="text-[9px] font-medium text-gray-500">Alterar o nome</span>
+                   </div>
+                 </button>
+                 <button onClick={() => { if (!currentProject) return; const newId = addProject({ ...currentProject, name: `${currentProject.name} (Cópia)`, createdAt: new Date().toISOString(), lastModified: new Date().toISOString() } as any); alert(`🚀 Projeto duplicado com sucesso!\nID: ${newId}`); }} className="flex items-center space-x-3 w-full px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors group/item">
+                   <Copy className="w-4 h-4 text-purple-500 group-item:scale-110 transition-transform" />
+                   <div className="flex flex-col items-start">
+                     <span>Duplicar Projeto</span>
+                     <span className="text-[9px] font-medium text-gray-500">Criar uma cópia</span>
+                   </div>
+                 </button>
+               </div>
+               <div className="px-2 py-1 border-b border-gray-100 dark:border-gray-800">
+                 <button onClick={() => { if (!currentProject) return; const nextVis = currentProject.is_public ? 'Privado' : 'Público'; updateProject(currentProject.id, { is_public: !currentProject.is_public } as any); alert(`👁️ Visibilidade alterada para: ${nextVis}`); }} className="flex items-center space-x-3 w-full px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors">
+                   {currentProject?.is_public ? <Eye className="w-4 h-4 text-emerald-500" /> : <Lock className="w-4 h-4 text-amber-500" />}
+                   <div className="flex flex-col items-start">
+                     <span>Alterar Visibilidade</span>
+                     <span className="text-[9px] font-medium text-gray-500">Atual: {currentProject?.is_public ? 'Público' : 'Privado'}</span>
+                   </div>
+                 </button>
+                 <button onClick={() => { if (!currentProject) return; const data = exportProjects(); const blob = new Blob([data], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${currentProject.name.replace(/\s+/g, '_')}_backup.json`; a.click(); }} className="flex items-center space-x-3 w-full px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors group/item">
+                   <Download className="w-4 h-4 text-emerald-500" />
+                   <div className="flex flex-col items-start">
+                     <span>Baixar Projeto</span>
+                     <span className="text-[9px] font-medium text-gray-500">Exportar código</span>
+                   </div>
+                 </button>
+               </div>
+               <div className="px-2 py-1 border-b border-gray-100 dark:border-gray-800">
+                 <button onClick={() => setShowTimeTravel(true)} className="flex items-center space-x-3 w-full px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors group/item">
+                   <LucideHistory className="w-4 h-4 text-indigo-500" />
+                   <div className="flex flex-col items-start">
+                     <span>Histórico de Versões</span>
+                     <span className="text-[9px] font-medium text-gray-500">Ver snapshots</span>
+                   </div>
+                 </button>
+                 <button onClick={() => setShowSearchModal(true)} className="flex items-center space-x-3 w-full px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors group/item">
+                   <FolderOpen className="w-4 h-4 text-gray-500" />
+                   <div className="flex flex-col items-start">
+                     <span>Projetos Recentes</span>
+                     <span className="text-[9px] font-medium text-gray-500">Abrir outros projetos</span>
+                   </div>
+                 </button>
+               </div>
+               <div className="px-2 pt-1">
+                 <button onClick={() => { if (!currentProject) return; if (confirm(`⚠️ Tem certeza que deseja EXCLUIR o projeto "${currentProject.name}"? Esta ação não pode ser desfeita.`)) { deleteProject(currentProject.id); alert('🗑️ Projeto removido permanentemente.'); } }} className="flex items-center space-x-3 w-full px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                   <Trash2 className="w-4 h-4" />
+                   <div className="flex flex-col items-start">
+                     <span>Excluir Permanentemente</span>
+                     <span className="text-[9px] font-medium text-red-400 opacity-70">Apagar tudo</span>
+                   </div>
+                 </button>
+               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Center Section - Search & Nav */}
+        <div className="flex-1 flex items-center justify-center max-w-2xl px-4 hidden md:flex">
+          {/* Navigation Links */}
+          <nav className="flex items-center space-x-1 mr-4">
+            <button onClick={() => setShowTemplates(true)} className="px-3 py-1.5 text-xs font-bold text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
               {language === 'pt' ? 'Templates' : 'Templates'}
             </button>
-            <button
-              onClick={() => setShowDocs(true)}
-              className="px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-blue-900/20 rounded-md transition-colors"
-            >
+            <button onClick={() => setShowDocs(true)} className="px-3 py-1.5 text-xs font-bold text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
               {language === 'pt' ? 'Docs' : 'Docs'}
             </button>
-            <button
-              onClick={() => setShowIntegrations(true)}
-              className="px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-blue-900/20 rounded-md transition-colors"
-            >
+            <button onClick={() => setShowIntegrations(true)} className="px-3 py-1.5 text-xs font-bold text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
               {language === 'pt' ? 'Integrações' : 'Integrations'}
             </button>
           </nav>
-        </div>
 
-        {/* Center Section - Search & Project Management */}
-        <div className="flex-1 flex items-center justify-center space-x-6 mx-4">
-          {/* Resized Search */}
-          <div 
-            className="w-full max-w-[180px] relative cursor-pointer group"
-            onClick={() => setShowSearchModal(true)}
-          >
-            <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400 group-hover:text-blue-500 transition-colors" />
+          {/* Search */}
+          <div className="flex-1 relative cursor-pointer group max-w-sm" onClick={() => setShowSearchModal(true)}>
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
             <input
               type="text"
-              placeholder="Buscar..."
+              placeholder="Buscar (Cmd+K)"
               value=""
               readOnly
-              className="w-full pl-8 pr-10 py-1.5 text-xs bg-gray-100 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none text-gray-800 dark:text-white placeholder-gray-500 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-all"
+              className="w-full pl-9 pr-10 py-1.5 text-xs bg-gray-100/50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none text-gray-800 dark:text-white placeholder-gray-500 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
             />
             <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center">
-              <kbd className="px-1 py-0.5 text-[10px] bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded border border-gray-300 dark:border-gray-600">
-                K
+              <kbd className="px-1.5 py-0.5 text-[10px] font-medium bg-white dark:bg-gray-900 text-gray-500 rounded border border-gray-200 dark:border-gray-700 shadow-sm">
+                ⌘K
               </kbd>
             </div>
           </div>
+        </div>
 
-          {/* Project Details & Management */}
-          <div className="flex items-center space-x-3 px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl hover:shadow-lg hover:shadow-blue-500/5 transition-all group/project">
-            <div className="flex flex-col items-start leading-none min-w-0">
-              <div className="flex items-center space-x-2">
-                <span className="text-xs font-black text-gray-800 dark:text-white truncate max-w-[200px]">
-                  {currentProject?.name || 'Nenhum Projeto Ativo'}
-                </span>
-                <div className={`w-1 h-1 rounded-full ${currentProject ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`} />
-              </div>
-              <span className="text-[9px] text-gray-500 dark:text-gray-500 font-medium uppercase tracking-tighter">
-                {currentProject ? `${currentProject.type} • ${currentProject.is_public ? 'Público' : 'Privado'}` : 'Selecione ou crie um novo'}
-              </span>
-            </div>
-
-            <div className="h-6 w-px bg-gray-200 dark:bg-gray-800" />
-
-            <div className="relative group/menu">
-              <button className="p-1 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors text-gray-400 hover:text-blue-500">
-                <MoreVertical className="w-4 h-4" />
-              </button>
-              
-              {/* Project Actions Dropdown */}
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-[60] backdrop-blur-xl">
-                 {/* ... (keep actions rest same) ... */}
-                   {/* Primary Actions */}
-                   <div className="px-2 pb-1 mb-1 border-b border-gray-100 dark:border-gray-800">
-                     <button 
-                       onClick={() => {
-                         if (!currentProject) return;
-                         const newName = prompt('Novo nome do projeto:', currentProject.name);
-                         if (newName) updateProject(currentProject.id, { name: newName });
-                       }}
-                       className="flex items-center space-x-3 w-full px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors group/item"
-                     >
-                       <Edit2 className="w-4 h-4 text-blue-500 group-hover/item:scale-110 transition-transform" />
-                       <div className="flex flex-col items-start">
-                         <span>Renomear Projeto</span>
-                         <span className="text-[9px] font-medium text-gray-500 dark:text-gray-500">Alterar o nome identificador</span>
-                       </div>
-                     </button>
-
-                     <button 
-                       onClick={() => {
-                         if (!currentProject) return;
-                         const newId = addProject({ 
-                           ...currentProject, 
-                           name: `${currentProject.name} (Cópia)`,
-                           createdAt: new Date().toISOString(),
-                           lastModified: new Date().toISOString()
-                         } as any);
-                         alert(`🚀 Projeto duplicado com sucesso!\nID: ${newId}`);
-                       }}
-                       className="flex items-center space-x-3 w-full px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors group/item"
-                     >
-                       <Copy className="w-4 h-4 text-purple-500 group-item:scale-110 transition-transform" />
-                       <div className="flex flex-col items-start">
-                         <span>Duplicar Projeto</span>
-                         <span className="text-[9px] font-medium text-gray-500 dark:text-gray-500">Criar uma cópia idêntica</span>
-                       </div>
-                     </button>
-                   </div>
-
-                   {/* Visibility & Export */}
-                   <div className="px-2 py-1 border-b border-gray-100 dark:border-gray-800">
-                     <div className="px-3 py-1 text-[9px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest">Configurações</div>
-                     <button 
-                       onClick={() => {
-                         if (!currentProject) return;
-                         const nextVis = currentProject.is_public ? 'Privado' : 'Público';
-                         updateProject(currentProject.id, { is_public: !currentProject.is_public } as any);
-                         alert(`👁️ Visibilidade alterada para: ${nextVis}`);
-                       }}
-                       className="flex items-center space-x-3 w-full px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors"
-                     >
-                       {currentProject?.is_public ? <Eye className="w-4 h-4 text-emerald-500" /> : <Lock className="w-4 h-4 text-amber-500" />}
-                       <div className="flex flex-col items-start">
-                         <span>Alterar Visibilidade</span>
-                         <span className="text-[9px] font-medium text-gray-500 dark:text-gray-500">
-                           Atual: {currentProject?.is_public ? 'Público' : 'Privado'}
-                         </span>
-                       </div>
-                     </button>
-
-                     <button 
-                       onClick={() => {
-                         if (!currentProject) return;
-                         const data = exportProjects();
-                         const blob = new Blob([data], { type: 'application/json' });
-                         const url = URL.createObjectURL(blob);
-                         const a = document.createElement('a');
-                         a.href = url;
-                         a.download = `${currentProject.name.replace(/\s+/g, '_')}_backup.json`;
-                         a.click();
-                       }}
-                       className="flex items-center space-x-3 w-full px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors group/item"
-                     >
-                       <Download className="w-4 h-4 text-emerald-500" />
-                       <div className="flex flex-col items-start">
-                         <span>Baixar Projeto</span>
-                         <span className="text-[9px] font-medium text-gray-500 dark:text-gray-500">Exportar código e metadados</span>
-                       </div>
-                     </button>
-                   </div>
-
-                   {/* History & Recents */}
-                   <div className="px-2 py-1 border-b border-gray-100 dark:border-gray-800">
-                     <button 
-                       onClick={() => setShowTimeTravel(true)}
-                       className="flex items-center space-x-3 w-full px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors group/item"
-                     >
-                       <LucideHistory className="w-4 h-4 text-indigo-500" />
-                       <div className="flex flex-col items-start">
-                         <span>Histórico de Versões</span>
-                         <span className="text-[9px] font-medium text-gray-500 dark:text-gray-500">Ver snapshots temporais</span>
-                       </div>
-                     </button>
-
-                     <button 
-                       onClick={() => setShowSearchModal(true)}
-                       className="flex items-center space-x-3 w-full px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors group/item"
-                     >
-                       <FolderOpen className="w-4 h-4 text-gray-500" />
-                       <div className="flex flex-col items-start">
-                         <span>Projetos Recentes</span>
-                         <span className="text-[9px] font-medium text-gray-500 dark:text-gray-500">Abrir outros espaços de trabalho</span>
-                       </div>
-                     </button>
-                   </div>
-
-                   {/* Danger Zone */}
-                   <div className="px-2 pt-1">
-                     <button 
-                       onClick={() => {
-                         if (!currentProject) return;
-                         if (confirm(`⚠️ Tem certeza que deseja EXCLUIR o projeto "${currentProject.name}"? Esta ação não pode ser desfeita.`)) {
-                           deleteProject(currentProject.id);
-                           alert('🗑️ Projeto removido permanentemente.');
-                         }
-                       }}
-                       className="flex items-center space-x-3 w-full px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                     >
-                       <Trash2 className="w-4 h-4" />
-                       <div className="flex flex-col items-start">
-                         <span>Excluir Permanentemente</span>
-                         <span className="text-[9px] font-medium text-red-400 dark:text-red-400 opacity-70">Apagar todos os arquivos</span>
-                       </div>
-                     </button>
-                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        {/* Right Section */}
-        <div className="flex items-center space-x-2">
-          <PresenceAvatars />
+        {/* Right Section - Tools & Profile */}
+        <div className="flex items-center space-x-3 shrink-0">
           
-          <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-2" />
-
-
-          {/* Credits Display */}
-          <button 
-            onClick={() => setShowPaymentsModal(true)}
-            className="flex items-center space-x-2 px-3 py-1 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200/50 dark:border-emerald-800/30 rounded-lg hover:scale-105 transition-all duration-300 group"
-            title="Seu Saldo de Créditos"
-          >
-            <div className="w-5 h-5 bg-emerald-100 dark:bg-emerald-800 rounded-full flex items-center justify-center group-hover:rotate-12 transition-transform">
-              <Wallet className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-            </div>
-            <div className="flex flex-col items-start leading-none">
-              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-tighter">Créditos</span>
-              <span className="text-sm font-black text-gray-800 dark:text-white">{credits.toLocaleString()}</span>
-            </div>
-            <Plus className="w-2.5 h-2.5 text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity ml-1" />
-          </button>
-
-          <button
-            onClick={() => {
-              setShowPaymentsModal(true);
-              // Trigger sync after modal opens is handled by the modal's internal logic or can be a custom event
-            }}
-            className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all group"
-            title="Sincronizar Créditos"
-          >
-            <RefreshCw className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-700" />
-          </button>
-          
-          <div className="h-4 w-px bg-gray-200 dark:bg-gray-800 mx-1" />
-          
-          <div className="flex items-center -space-x-1">
-            <button 
-              onClick={() => setShowVentureDashboard(true)}
-              className="p-1.5 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-all"
-              title="Sovereign Launchpad"
-            >
+          {/* Action Tools (Icons) */}
+          <div className="hidden lg:flex items-center space-x-1 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-1">
+            <button onClick={() => setShowVentureDashboard(true)} className="p-1.5 text-orange-500 hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-md transition-colors" title="Sovereign Launchpad">
               <Rocket className="w-4 h-4" />
             </button>
-
-            <button 
-              onClick={() => setShowShareModal(true)}
-              className="p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
-              title="Compartilhar Projeto"
-            >
+            <button onClick={() => setShowShareModal(true)} className="p-1.5 text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-md transition-colors" title="Compartilhar Projeto">
               <Share2 className="w-4 h-4" />
             </button>
-
-            <button 
-              onClick={() => setShowTimeTravel(!showTimeTravel)}
-              className={`p-1.5 ${showTimeTravel ? 'text-indigo-600 bg-indigo-50' : 'text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'} rounded-lg transition-all`}
-              title="Neural Time Travel"
-            >
+            <button onClick={() => setShowTimeTravel(!showTimeTravel)} className={`p-1.5 ${showTimeTravel ? 'text-indigo-600 bg-indigo-100' : 'text-gray-400 hover:text-indigo-500 hover:bg-indigo-100 dark:hover:bg-indigo-900/30'} rounded-md transition-colors`} title="Neural Time Travel">
               <LucideHistory className="w-4 h-4" />
             </button>
-
-            <button 
-              onClick={() => {
-                if (currentProject) {
-                  calculatePulse(currentProject.code);
-                }
-                setShowPulse(true);
-              }}
-              className={`p-1.5 ${showPulse ? 'text-emerald-500 bg-emerald-50' : 'text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'} rounded-lg transition-all relative`}
-              title="Maximus Pulse Analytics"
-            >
+            <button onClick={() => { if (currentProject) { calculatePulse(currentProject.code); } setShowPulse(true); }} className={`p-1.5 ${showPulse ? 'text-emerald-500 bg-emerald-100' : 'text-gray-400 hover:text-emerald-500 hover:bg-emerald-100 dark:hover:bg-emerald-900/30'} rounded-md transition-colors relative`} title="Maximus Pulse Analytics">
               <Activity className="w-4 h-4" />
               <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
             </button>
-
-            <button 
-              onClick={() => setShowOllamaSettings(true)}
-              className={`p-1.5 ${showOllamaSettings ? 'text-purple-500 bg-purple-50' : 'text-gray-400 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20'} rounded-lg transition-all relative`}
-              title="Configurações de IA Local (Ollama)"
-            >
+            <button onClick={() => setShowOllamaSettings(true)} className={`p-1.5 ${showOllamaSettings ? 'text-purple-500 bg-purple-100' : 'text-gray-400 hover:text-purple-500 hover:bg-purple-100 dark:hover:bg-purple-900/30'} rounded-md transition-colors relative`} title="Ollama Settings">
               <Brain className="w-4 h-4" />
-              {aiProvider === 'ollama' && (
-                <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-purple-500 rounded-full" />
-              )}
             </button>
           </div>
 
-          <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-2" />
+          {/* Minimal Credits */}
+          <button onClick={() => setShowPaymentsModal(true)} className="hidden sm:flex items-center space-x-2 px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/30 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors group">
+            <Wallet className="w-3.5 h-3.5 text-emerald-500" />
+            <span className="text-xs font-black text-emerald-700 dark:text-emerald-400">{credits.toLocaleString()}</span>
+          </button>
 
-          {/* Language / Notifications / Settings */}
-          <div className="flex items-center space-x-1 bg-gray-50 dark:bg-gray-900/50 p-1 rounded-xl border border-gray-200 dark:border-gray-800/50">
-            <button
-              onClick={() => setLanguage(language === 'pt' ? 'en' : 'pt')}
-              className="px-2 py-1 text-[10px] font-black text-gray-500 hover:text-blue-500 transition-colors uppercase"
-            >
-              {language}
-            </button>
+          {/* Avatars */}
+          <div className="hidden xl:block px-2">
+            <PresenceAvatars />
+          </div>
+
+          <div className="h-5 w-px bg-gray-200 dark:bg-gray-800 hidden sm:block mx-1" />
+
+          {/* System & Profile */}
+          <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1">
+              <button onClick={() => setLanguage(language === 'pt' ? 'en' : 'pt')} className="p-1.5 text-[10px] font-black text-gray-400 hover:text-blue-500 transition-colors uppercase">
+                {language}
+              </button>
+              <ThemeToggle />
+              <button onClick={() => setShowNotifications(true)} className="relative p-1.5 text-gray-400 hover:text-blue-500 transition-colors">
+                <Bell className="w-4 h-4" />
+                <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full" />
+              </button>
+              <button onClick={() => setShowSettings(true)} className="p-1.5 text-gray-400 hover:text-blue-500 transition-colors">
+                <Settings className="w-4 h-4" />
+              </button>
+            </div>
             
-            <div className="h-4 w-px bg-gray-200 dark:bg-gray-800 mx-1" />
-            <ThemeToggle />
-            <div className="h-4 w-px bg-gray-200 dark:bg-gray-800 mx-1" />
-
-            <button 
-              onClick={() => setShowNotifications(true)}
-              className="relative p-1.5 text-gray-400 hover:text-blue-500 transition-colors" 
-              title="Notificações"
-            >
-              <Bell className="w-4 h-4" />
-              <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-white dark:border-gray-900" />
-            </button>
-
-            <button 
-              onClick={() => setShowSettings(true)}
-              className="p-1.5 text-gray-400 hover:text-blue-500 transition-colors" 
-              title="Configurações"
-            >
-              <Settings className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 mx-2" />
-
-          {/* Profile */}
-          <div className="flex items-center space-x-3 ml-2">
-            <button 
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className="hidden sm:flex flex-col items-end leading-tight mr-1 hover:opacity-80 transition-opacity"
-            >
-              <span className="text-[10px] font-bold text-gray-800 dark:text-gray-200">
-                {profile?.full_name || user?.email?.split('@')[0] || 'Dev Maximus'}
-              </span>
-              <span className="text-[8px] font-medium text-blue-500 uppercase tracking-widest">
-                Professional
-              </span>
-            </button>
-            <button
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className="w-8 h-8 rounded-full overflow-hidden border-2 border-blue-500/20 hover:border-blue-500/50 transition-all shadow-lg shadow-blue-500/10"
-            >
+            <button onClick={() => setShowUserMenu(!showUserMenu)} className="ml-1 w-8 h-8 rounded-full overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-all">
               {profile?.avatar_url ? (
-                <img 
-                  src={profile.avatar_url} 
-                  alt="Avatar" 
-                  className="w-full h-full object-cover"
-                />
+                <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
                   <User className="w-4 h-4 text-white" />
                 </div>
               )}
@@ -490,7 +318,6 @@ const TopBar = ({ onBackToWelcome }: TopBarProps) => {
           </div>
         </div>
       </div>
-
       {/* Settings Modal */}
       {showSettings && (
         <SettingsModal 
