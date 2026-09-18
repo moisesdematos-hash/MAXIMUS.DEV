@@ -629,8 +629,8 @@ export default App;"
             >
               <div className="h-full">
                 {code ? (
-                  <iframe sandbox=" allow-scripts allow-forms allow-popups allow-modals\ 
-                    ref={previewRef}
+                  <iframe sandbox="allow-scripts allow-forms allow-popups allow-modals"
+ref={previewRef}
                     srcDoc={`
                       <!DOCTYPE html>
                       <html lang="pt-BR">
