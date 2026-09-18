@@ -46,7 +46,7 @@ DIRETRIZES FUNDAMENTAIS:
     
     try {
       if (isGroq) {
-        const groqModel = modelId === 'maximus-neural' ? 'llama-3.1-70b-versatile' : (modelId === 'llama-3' ? 'llama3-8b-8192' : modelId);
+        const groqModel = modelId === 'maximus-neural' ? 'llama-3.3-70b-versatile' : (modelId === 'llama-3' ? 'llama-3.1-8b-instant' : modelId);
         return await this.callGroq(groqModel, prompt, history, systemPrompt);
       } else if (isOpenAI) {
         return await this.callOpenAI(modelId, prompt, history, systemPrompt);
