@@ -911,4 +911,4 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onCodeGenerated, currentCode }) => 
   );
 };
 
-export default ChatArea;
+export default React.memo(ChatArea);

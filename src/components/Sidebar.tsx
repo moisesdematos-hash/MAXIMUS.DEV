@@ -266,4 +266,4 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle }) => {
   );
 };
 
-export default Sidebar;
+export default React.memo(Sidebar);

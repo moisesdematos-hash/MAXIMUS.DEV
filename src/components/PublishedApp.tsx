@@ -107,7 +107,7 @@ const PublishedApp: React.FC<PublishedAppProps> = ({ projectId }) => {
         title="Published App"
         srcDoc={srcDoc}
         className="w-full h-full border-none"
-        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+        sandbox="allow-scripts allow-forms allow-popups allow-modals"
       />
       
       {/* Selo do Maximus */}

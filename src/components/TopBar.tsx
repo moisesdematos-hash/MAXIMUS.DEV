@@ -564,4 +564,4 @@ const TopBar = ({ onBackToWelcome }: TopBarProps) => {
   );
 };
 
-export default TopBar;
+export default React.memo(TopBar);

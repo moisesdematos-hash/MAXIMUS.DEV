@@ -400,4 +400,4 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ onGetStarted }) => {
   );
 };
 
-export default WelcomePage;
+export default React.memo(WelcomePage);
