@@ -172,12 +172,63 @@ DIRETRIZES FUNDAMENTAIS:
     return data.candidates[0].content.parts[0].text;
   }
 
-  private static async callGroq(model: string, prompt: string, history: ChatMessage[], systemPrompt: string) {
-    const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-    if (!apiKey) throw new Error("Chave da Groq não configurada. Verifique o .env");
+    private static async callGroq(model: string, prompt: string, history: ChatMessage[], systemPrompt: string) {
+    // Attempt to use Vercel Serverless Function first for secure API key injection
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: 'groq',
+          model: model,
+          prompt: prompt,
+          history: history,
+          systemPrompt: systemPrompt
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.choices && data.choices[0] && data.choices[0].message) {
+          return data.choices[0].message.content;
+        }
+      }
+    } catch (err) {
+      console.warn("Serverless backend failed, falling back to local...", err);
+    }
+
+    // Fallback: Use client-side key if available (dev only or custom user key)
+    const apiKey = import.meta.env.VITE_GROQ_API_KEY || localStorage.getItem('user_groq_key');
+    if (!apiKey) throw new Error("Chave da Groq não configurada no backend nem localmente.");
 
     const messages = [
       { role: 'system', content: systemPrompt },
+      ...history,
+      { role: 'user', content: prompt }
+    ];
+
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: messages,
+        temperature: 0.7,
+        stream: false
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || 'Erro na API da Groq');
+    }
+
+    const data = await response.json();
+    return data.choices[0].message.content;
+  },
       ...history,
       { role: 'user', content: prompt }
     ];
