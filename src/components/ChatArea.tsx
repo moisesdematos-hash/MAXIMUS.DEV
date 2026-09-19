@@ -60,10 +60,16 @@ renderer.code = (code, language, isEscaped) => {
   if (typeof code === 'object' && code.lang === 'mermaid') {
       return `<div class="mermaid">${code.text}</div>`;
   }
-  if (typeof originalCode === 'function' && typeof code !== 'object') {
-     return originalCode(code, language, isEscaped);
-  }
-  return `<pre><code class="language-${language || code.lang}">${typeof code === 'object' ? code.text : code}</code></pre>`;
+  
+  const rawText = typeof code === 'object' ? code.text : code;
+  const escapedText = rawText
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+    
+  return `<pre><code class="language-${language || (typeof code === 'object' ? code.lang : '')}">${escapedText}</code></pre>`;
 };
 marked.use({ renderer });
 
@@ -418,7 +424,21 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onCodeGenerated, currentCode }) => 
         setVulnerabilities(result.security || []);
       }
 
-      let finalContent = `🚀 **Feature processada com sucesso!**\n\n` +
+      if (result.frontend && result.frontend.success === false) {
+        let finalContent = `❌ **Erro na Geração!**\n\nO orquestrador encontrou um problema:\n**${result.frontend.error || 'Erro desconhecido'}**\n\nVerifique sua conexão ou a chave de API (Groq/OpenAI).`;
+        
+        setMessages((prev: Message[]) => prev.map((msg: Message) =>
+          msg.id === aiMessageId
+            ? { ...msg, content: finalContent, isStreaming: false }
+            : msg
+        ));
+        
+        onCodeGenerated('');
+        setShowAgentReasoning(false);
+        return;
+      }
+
+      let finalContent = `🎉 **Feature processada com sucesso!**\n\n` +
         `🛡️ **Segurança**: ${result.security.length} vulnerabilidades encontradas.\n` +
         `🎨 **UI/Frontend**: Gerado.\n` +
         `⚙️ **API/Backend**: Gerado.\n` +
