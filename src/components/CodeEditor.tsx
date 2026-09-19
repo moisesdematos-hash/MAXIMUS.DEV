@@ -672,9 +672,10 @@ ref={previewRef}
                               return new Proxy({}, { get: () => () => null }); 
                             };
                           </script>
+                          <script type="text/plain" id="source-code">${code.replace(/</g, '\\x3c')}</script>
                           <script type="text/babel" data-presets="env,react,typescript">
                             try {
-                              const rawCode = `\${code.replace(/\/g, '\\').replace(/`/g, '\`').replace(/\$/g, '\$')}`;
+                              const rawCode = document.getElementById('source-code').textContent;
                               
                               const transpiled = Babel.transform(rawCode, { 
                                 presets: ['env', 'react', 'typescript'],
@@ -692,12 +693,12 @@ ref={previewRef}
                                 root.render(React.createElement('div', { style: { padding: '20px', color: '#666' } }, 'Componente principal não encontrado.'));
                               }
                             } catch (err) {
-                              document.getElementById('root').innerHTML = `
+                              document.getElementById('root').innerHTML = \`
                                 <div style="background:#fee2e2; border:1px solid #ef4444; margin:16px; padding:16px; border-radius:8px; color:#b91c1c; font-family:monospace;">
                                   <b style="display:block;margin-bottom:8px;">Erro de Renderização do Preview:</b>
-                                  \${err.toString().replace(/\n/g, '<br/>')}
+                                  \${err.toString().replace(/\\n/g, '<br/>')}
                                 </div>
-                              `;
+                              \`;
                               console.error("Preview Error:", err);
                             }
                           </script>
