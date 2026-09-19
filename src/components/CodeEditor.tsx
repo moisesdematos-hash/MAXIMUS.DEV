@@ -672,10 +672,10 @@ ref={previewRef}
                               return new Proxy({}, { get: () => () => null }); 
                             };
                           </script>
-                          <script type="text/plain" id="source-code">${code.replace(/</g, '\\x3c')}</script>
+                          <script type="text/plain" id="source-code">${encodeURIComponent(code)}</script>
                           <script type="text/babel" data-presets="env,react,typescript">
                             try {
-                              const rawCode = document.getElementById('source-code').textContent;
+                              const rawCode = decodeURIComponent(document.getElementById('source-code').textContent);
                               
                               const transpiled = Babel.transform(rawCode, { 
                                 presets: ['env', 'react', 'typescript'],
