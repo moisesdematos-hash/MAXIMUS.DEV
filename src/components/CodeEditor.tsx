@@ -649,48 +649,61 @@ ref={previewRef}
                       </head>
                       <body>
                         <div id="root"></div>
-                        <script>
-                          // Prevenir erros de console no navegador por falta de require/exports
-                          window.exports = {};
-                          window.require = (mod) => { if (mod === 'react') return React; return {}; };
-                        </script>
-                        <script type="text/babel" data-presets="react,typescript">
-                          try {
-                            // Extraimos o código e evitamos problemas de import/export isolado no navegador
-                            const rawCode = \`${code.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`;
-                            const executableCode = rawCode
-                              .replace(/import\\s+.*?;?\\n/g, '') // remove imports
-                              .replace(/export\\s+default\\s+/g, '') // remove export default
-                              .replace(/export\\s+/g, ''); // remove export simples
-                            
-                            // Compilação com Babel Standalone
-                            const transpiled = Babel.transform(executableCode, { 
-                              presets: ['react', 'typescript'],
-                              filename: 'App.tsx'
-                            }).code;
-                            
-                            // Avalia no escopo local
-                            eval(transpiled);
-                            
-                            const root = ReactDOM.createRoot(document.getElementById('root'));
-                            if (typeof App !== 'undefined') {
-                              root.render(React.createElement(App));
-                            } else {
-                              throw new Error("O componente App não foi encontrado no código gerado.");
+                          <script>
+                            // Mock robusto de ambiente Node/Browser para o Babel
+                            window.exports = {};
+                            window.require = (mod) => { 
+                              if (mod === 'react') return window.React; 
+                              if (mod === 'react-dom') return window.ReactDOM;
+                              if (mod === 'lucide-react') {
+                                return new Proxy({}, {
+                                  get: (target, prop) => {
+                                    if (prop === '__esModule') return true;
+                                    return (props) => window.React.createElement('svg', {
+                                      width: props.size || 24, height: props.size || 24,
+                                      viewBox: '0 0 24 24', fill: 'none', stroke: props.color || 'currentColor',
+                                      strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round',
+                                      className: props.className,
+                                      dangerouslySetInnerHTML: { __html: '<circle cx="12" cy="12" r="10"/>' }
+                                    });
+                                  }
+                                });
+                              }
+                              return new Proxy({}, { get: () => () => null }); 
+                            };
+                          </script>
+                          <script type="text/babel" data-presets="env,react,typescript">
+                            try {
+                              const rawCode = `\${code.replace(/\/g, '\\').replace(/`/g, '\`').replace(/\$/g, '\$')}`;
+                              
+                              const transpiled = Babel.transform(rawCode, { 
+                                presets: ['env', 'react', 'typescript'],
+                                filename: 'App.tsx'
+                              }).code;
+                              
+                              eval(transpiled);
+                              
+                              const root = ReactDOM.createRoot(document.getElementById('root'));
+                              const Comp = exports.default || window.App || window.AdminLayout || window.Dashboard || Object.values(exports)[0];
+                              
+                              if (Comp) {
+                                root.render(React.createElement(Comp));
+                              } else {
+                                root.render(React.createElement('div', { style: { padding: '20px', color: '#666' } }, 'Componente principal não encontrado.'));
+                              }
+                            } catch (err) {
+                              document.getElementById('root').innerHTML = `
+                                <div style="background:#fee2e2; border:1px solid #ef4444; margin:16px; padding:16px; border-radius:8px; color:#b91c1c; font-family:monospace;">
+                                  <b style="display:block;margin-bottom:8px;">Erro de Renderização do Preview:</b>
+                                  \${err.toString().replace(/\n/g, '<br/>')}
+                                </div>
+                              `;
+                              console.error("Preview Error:", err);
                             }
-                          } catch (err) {
-                            document.getElementById('root').innerHTML = \`
-                              <div style="background:#fee2e2; border:1px solid #ef4444; margin:16px; padding:16px; border-radius:8px; color:#b91c1c; font-family:monospace;">
-                                <b style="display:block;margin-bottom:8px;">Erro de Renderização do Preview:</b>
-                                \${err.toString().replace(/\\n/g, '<br/>')}
-                              </div>
-                            \`;
-                            console.error("Preview Error:", err);
-                          }
-                        </script>
-                      </body>
-                      </html>
-                    `}
+                          </script>
+                        </body>
+                        </html>
+                      `}
                     className="w-full h-full border-none"
                     title="Preview do projeto"
                   />
