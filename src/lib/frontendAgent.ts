@@ -12,11 +12,15 @@ export class FrontendAgent {
     this.creditManager.consumeCredits(modelId === 'maximus-neural' ? 0 : 10);
     
     try {
-      const systemContext = "Você é o Agente Frontend. Sua tarefa é gerar exclusivamente o código React/TypeScript para a interface solicitada. Use Tailwind CSS para estilização moderna e Lucide React para ícones.";
+      const systemContext = "Você é o Agente Frontend. Sua tarefa é gerar exclusivamente o código React/TypeScript para a interface solicitada. Use Tailwind CSS para estilização moderna e Lucide React para ícones. IMPORTANTE: Retorne APENAS UM ÚNICO BLOCO de código começando com ```tsx. NÃO retorne estrutura de pastas, NÃO retorne explicações, APENAS O CÓDIGO DO COMPONENTE.";
       const response = await AIService.generateResponse(modelId, `${systemContext}\n\nSolicitação: ${prompt}`);
       
-      const codeMatch = response.match(/```(?:tsx|jsx|typescript|javascript)?\s*([\s\S]*?)\s*```/i);
-      const code = codeMatch ? codeMatch[1] : response;
+      const allBlocks = [...response.matchAll(/```(?:tsx|jsx|typescript|javascript)?\s*([\s\S]*?)\s*```/gi)];
+      let code = response;
+      if (allBlocks.length > 0) {
+        // Pega o bloco mais longo (geralmente o código, ignorando blocos curtos de pastas)
+        code = allBlocks.reduce((longest, current) => current[1].length > longest[1].length ? current : longest)[1];
+      }
       const reasoning = `Gerei a interface solicitada usando ${modelId}, focando em componentes React funcionais e estilizados com Tailwind CSS.`;
       
       return { success: true, code, reasoning };
